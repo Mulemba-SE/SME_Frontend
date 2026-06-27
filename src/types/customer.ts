@@ -43,9 +43,3 @@ export interface CustomerStats {
   totalOverdue: number;
 }
 
-export interface CustomerStats {
-  totalCustomers: number;
-  newCustomers: number;
-  totalReceivables: number;
-  totalOverdue: number;
-}

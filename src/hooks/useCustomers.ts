@@ -8,7 +8,7 @@ export function useCustomers(params: CustomerListParams) {
   return useQuery({
     queryKey: [CUSTOMERS_KEY, params],
     queryFn: () => customersApi.list(params),
-    placeholderData: (previous) => previous, // keep old rows visible while refetching
+    placeholderData: (previous) => previous, 
   });
 }
 
@@ -18,7 +18,6 @@ export function useCreateCustomer() {
   return useMutation({
     mutationFn: (input: CreateCustomerRequest) => customersApi.create(input),
     onSuccess: () => {
-      // Any cached customer list may now be stale — refetch all of them.
       queryClient.invalidateQueries({ queryKey: [CUSTOMERS_KEY] });
     },
   });

@@ -18,13 +18,14 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
   return debounced;
 }
 
-// ─── Status Badge ───────────────────────────────────────────────────────────
+// Status Badge 
 
 const STATUS_STYLES: Record<InvoiceStatus, { bg: string; text: string; dot: string; label: string }> = {
-  paid: { bg: "bg-green-50 border-green-100", text: "text-green-700", dot: "bg-green-500", label: "Paid" },
+  draft: { bg: "bg-gray-100 border-gray-200", text: "text-gray-500", dot: "bg-gray-400", label: "Draft" },
+  sent: { bg: "bg-blue-50 border-blue-100", text: "text-blue-700", dot: "bg-blue-500", label: "Sent" },
   pending: { bg: "bg-amber-50 border-amber-100", text: "text-amber-700", dot: "bg-amber-500", label: "Pending" },
   overdue: { bg: "bg-red-50 border-red-100", text: "text-red-600", dot: "bg-red-400", label: "Overdue" },
-  draft: { bg: "bg-gray-100 border-gray-200", text: "text-gray-500", dot: "bg-gray-400", label: "Draft" },
+  paid: { bg: "bg-green-50 border-green-100", text: "text-green-700", dot: "bg-green-500", label: "Paid" },
 };
 
 function StatusBadge({ status }: { status: InvoiceStatus }) {
@@ -37,7 +38,7 @@ function StatusBadge({ status }: { status: InvoiceStatus }) {
   );
 }
 
-// ─── Row Actions ─────────────────────────────────────────────────────────────
+// Row Actions
 
 function RowActions({ invoiceId }: { invoiceId: string }) {
   return (
@@ -67,7 +68,7 @@ function RowActions({ invoiceId }: { invoiceId: string }) {
   );
 }
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
+// Skeleton 
 
 function TableSkeleton() {
   return (
@@ -87,7 +88,7 @@ function TableSkeleton() {
   );
 }
 
-// ─── Empty / Error States ─────────────────────────────────────────────────────
+// Empty / Error States
 
 function InlineEmpty({ hasFilters }: { hasFilters: boolean }) {
   return (
@@ -135,7 +136,7 @@ function InlineError({ message }: { message: string }) {
   );
 }
 
-// ─── Invoice Row ──────────────────────────────────────────────────────────────
+// Invoice Row
 
 function InvoiceRow({ invoice }: { invoice: Invoice }) {
   return (
@@ -162,7 +163,7 @@ function InvoiceRow({ invoice }: { invoice: Invoice }) {
   );
 }
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
+// Icons
 
 function BellIcon() {
   return (
@@ -316,6 +317,7 @@ export default function InvoicesPage() {
           <option value="pending">Pending</option>
           <option value="overdue">Overdue</option>
           <option value="draft">Draft</option>
+          <option value="sent">Sent</option>
         </select>
 
         <div className="flex gap-2">

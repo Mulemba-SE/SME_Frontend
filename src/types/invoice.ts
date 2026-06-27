@@ -1,7 +1,7 @@
 // Invoice contract — share this shape with Kelvin before he builds the
 // backend, same as types/customer.ts. Mocked for now in api/invoicesMock.ts.
 
-export type InvoiceStatus = "paid" | "pending" | "overdue" | "draft";
+export type InvoiceStatus = "paid" | "pending" | "overdue" | "draft" | "sent";
 
 export interface Invoice {
   id: string;

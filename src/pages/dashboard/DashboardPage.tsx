@@ -1,7 +1,7 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { useCustomerStats } from "../../hooks/useCustomers";
 import { useInvoices, useInvoiceStats } from "../../hooks/useInvoices";
-import { useCustomers } from "../../hooks/useCustomers";
 import { formatKES, formatDate } from "../../lib/format";
 
 interface StatCardProps {
@@ -70,7 +70,6 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: stats } = useInvoiceStats();
-  const { data: customersData } = useCustomers({ status: "all", page: 1, limit: 1000 });
   const { data: recentInvoicesResponse, isLoading: recentLoading, isError: recentError } = useInvoices({ status: "all", page: 1, limit: 4 });
 
   const firstName = user?.firstName ?? "there";
@@ -78,8 +77,9 @@ export default function DashboardPage() {
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  const customerCount = customersData?.total ?? customersData?.data?.length ?? 0;
-  const recentInvoices = recentInvoicesResponse?.data ?? [];
+  const { data:statsData } = useCustomerStats();
+  const customerCount = statsData?.totalCustomers ?? 0;
+  const recentInvoices = recentInvoicesResponse?.data ?? [];  
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
