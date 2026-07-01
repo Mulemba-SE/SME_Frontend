@@ -6,7 +6,7 @@ import { StatCard } from "../../../components/ui/StatCard";
 import { Pagination } from "../../../components/ui/Pagination";
 import { formatKES, formatDate } from "../../../lib/format";
 import type { Customer } from "../../../types/customer";
-import { useCustomerStore } from "../../../store/customerStore";
+
 type InvoiceStatus = "paid" | "pending" | "overdue" | "draft";
 
 type SearchBy = "email" | "userNo" | "phoneNumber" | "dueDate";
@@ -231,24 +231,8 @@ export default function CustomersPage() {
     limit: PAGE_SIZE,
   });
 
-  const setCustomers = useCustomerStore((state) => state.setCustomers);
-  const setTotal = useCustomerStore((state) => state.setTotal);
-  const setLoading = useCustomerStore((state) => state.setLoading);
-
-  useEffect(() => {
-    setLoading(isLoading);
-  }, [isLoading, setLoading]);
-
-  useEffect(() => {
-    if (data) {
-      setCustomers(data.data);
-      if (data.total != null) setTotal(data.total);
-    }
-  }, [data, setCustomers, setTotal]);
-
-  const customers = useCustomerStore((state) => state.customers);
-  const total = useCustomerStore((state) => state.total);
-  const loading = useCustomerStore((state) => state.isLoading);
+  const customers = data?.data ?? [];
+  const total = data?.total;
 
   const { data: statsData, isLoading: statsLoading, isError: statsError } = useCustomerStats();
   const totalCustomersDisplay = statsLoading
@@ -454,7 +438,7 @@ export default function CustomersPage() {
       {/* ── Table ── */}
       <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
 
-        {loading ? (
+        {isLoading ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -501,7 +485,7 @@ export default function CustomersPage() {
                 <tbody className="divide-y divide-gray-50">
                   {customers.map((customer) => (
                     <CustomerRow
-                      key={customer.userNo.toString()}
+                      key={`${customer.userNo}-${customer.invoiceNo ?? "none"}`} //Defensive reconciliation key in case of duplicate userNo with different invoiceNo
                       customer={customer}
                       selected={selected.has(customer.userNo.toString())}
                       onToggle={() => toggleOne(customer.userNo.toString())}

@@ -44,36 +44,6 @@ function StatusBadge({ status }: { status: InvoiceStatus }) {
   );
 }
 
-// Row Actions
-
-function RowActions({ invoiceNo }: { invoiceNo: number }) {
-  return (
-    <div className="flex items-center justify-end gap-1.5">
-      <Link
-        to={`/dashboard/invoices/${invoiceNo}`}
-        className="p-1.5 rounded-lg border border-gray-200 text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors"
-        aria-label="View invoice"
-      >
-        <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-      </Link>
-      <button
-        type="button"
-        className="p-1.5 rounded-lg border border-gray-200 text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors"
-        aria-label="More actions"
-      >
-        <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
-          <circle cx="12" cy="5" r="1.5" />
-          <circle cx="12" cy="12" r="1.5" />
-          <circle cx="12" cy="19" r="1.5" />
-        </svg>
-      </button>
-    </div>
-  );
-}
-
 // Skeleton
 
 function TableSkeleton() {
@@ -81,13 +51,13 @@ function TableSkeleton() {
     <tbody className="divide-y divide-gray-100">
       {Array.from({ length: 6 }).map((_, i) => (
         <tr key={i} className="animate-pulse">
+          <td className="px-4 py-3.5 w-10"><div className="w-4 h-4 bg-gray-100 rounded" /></td>
           <td className="px-4 py-3.5"><div className="h-3.5 bg-gray-100 rounded w-16" /></td>
           <td className="px-4 py-3.5"><div className="h-3.5 bg-gray-100 rounded w-32" /></td>
           <td className="px-4 py-3.5"><div className="h-3 bg-gray-100 rounded w-20" /></td>
           <td className="px-4 py-3.5"><div className="h-3 bg-gray-100 rounded w-20" /></td>
           <td className="px-4 py-3.5"><div className="h-3 bg-gray-100 rounded w-20" /></td>
           <td className="px-4 py-3.5"><div className="h-5 bg-gray-100 rounded-full w-16" /></td>
-          <td className="px-4 py-3.5 w-20" />
         </tr>
       ))}
     </tbody>
@@ -144,10 +114,26 @@ function InlineError({ message }: { message: string }) {
 
 // Invoice Row
 
-function InvoiceRow({ invoice }: { invoice: InvoiceListItem }) {
+function InvoiceRow({
+  invoice,
+  selected,
+  onToggle,
+}: {
+  invoice: InvoiceListItem;
+  selected: boolean;
+  onToggle: () => void;
+}) {
   const customerName = [invoice.firstName, invoice.lastName].filter(Boolean).join(" ") || "—";
   return (
     <tr className="hover:bg-gray-50/70 transition-colors">
+      <td className="px-4 py-3.5 w-10" onClick={(e) => e.stopPropagation()}>
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onToggle}
+          className="w-4 h-4 accent-blue-600 rounded cursor-pointer"
+        />
+      </td>
       <td className="px-4 py-3.5">
         <Link
           to={`/dashboard/invoices/${invoice.invoiceNo}`}
@@ -162,9 +148,6 @@ function InvoiceRow({ invoice }: { invoice: InvoiceListItem }) {
       <td className="px-4 py-3.5 text-sm font-semibold text-gray-800">{formatKES(invoice.invoiceTotal)}</td>
       <td className="px-4 py-3.5">
         <StatusBadge status={invoice.status} />
-      </td>
-      <td className="px-4 py-3.5 w-20">
-        <RowActions invoiceNo={invoice.invoiceNo} />
       </td>
     </tr>
   );
@@ -182,9 +165,10 @@ function BellIcon() {
 }
 
 export default function InvoicesPage() {
-  const [searchInput, setSearchInput] = useState(""); // maps to firstName filter
+  const [searchInput, setSearchInput] = useState("");
   const [status, setStatus] = useState<InvoiceStatus | "all">("all");
   const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
 
   const search = useDebouncedValue(searchInput, 350);
 
@@ -201,7 +185,7 @@ export default function InvoicesPage() {
   const statsUnavailable = isStatsLoading || isStatsError;
 
   const invoices = data ?? [];
-  // Backend doesn't return a total count, so pagination has to guess
+  // Backend doesn't return a total count
   const totalPages = page + (invoices.length === PAGE_SIZE ? 1 : 0);
 
   const handleSearchChange = (value: string) => {
@@ -212,6 +196,32 @@ export default function InvoicesPage() {
   const handleStatusChange = (value: InvoiceStatus | "all") => {
     setStatus(value);
     setPage(1);
+  };
+
+  const allSelected = invoices.length > 0 && invoices.every((inv) => selected.has(inv.invoiceNo));
+
+  const toggleAll = () => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allSelected) {
+        invoices.forEach((inv) => next.delete(inv.invoiceNo));
+      } else {
+        invoices.forEach((inv) => next.add(inv.invoiceNo));
+      }
+      return next;
+    });
+  };
+
+  const toggleOne = (invoiceNo: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(invoiceNo)) {
+        next.delete(invoiceNo);
+      } else {
+        next.add(invoiceNo);
+      }
+      return next;
+    });
   };
 
   return (
@@ -244,7 +254,6 @@ export default function InvoicesPage() {
       </div>
 
       {/* ── Stat Cards ── */}
-     
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
         <StatCard
           label="Total Invoiced"
@@ -334,15 +343,6 @@ export default function InvoicesPage() {
             className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 bg-white rounded-xl text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors"
           >
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-            </svg>
-            Filter
-          </button>
-          <button
-            type="button"
-            className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 bg-white rounded-xl text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors"
-          >
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
@@ -359,13 +359,13 @@ export default function InvoicesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-left">
+                  <th className="px-4 py-3 w-10" />
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Invoice #</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Created</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Due Date</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Actions</th>
                 </tr>
               </thead>
               <TableSkeleton />
@@ -381,18 +381,30 @@ export default function InvoicesPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 text-left">
+                    <th className="px-4 py-3 w-10">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={toggleAll}
+                        className="w-4 h-4 accent-blue-600 rounded cursor-pointer"
+                      />
+                    </th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Invoice #</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Created</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Due Date</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {invoices.map((invoice) => (
-                    <InvoiceRow key={invoice.invoiceNo} invoice={invoice} />
+                    <InvoiceRow
+                      key={invoice.invoiceNo}
+                      invoice={invoice}
+                      selected={selected.has(invoice.invoiceNo)}
+                      onToggle={() => toggleOne(invoice.invoiceNo)}
+                    />
                   ))}
                 </tbody>
               </table>

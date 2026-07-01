@@ -198,7 +198,7 @@ export default function CustomerDetailPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{customer.invoiceNo ?? "—"}</p>
+            <p className="text-1xl font-bold text-gray-900">{customer.invoiceNo ?? "—"}</p>
           </div>
 
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
@@ -211,7 +211,7 @@ export default function CustomerDetailPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-1xl font-bold text-gray-900">
               {customer.total != null ? formatKES(customer.total) : "—"}
             </p>
           </div>
@@ -226,7 +226,7 @@ export default function CustomerDetailPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{customer.invoiceNo != null ? `INV-${String(customer.invoiceNo).padStart(7, '0')}` : "—"}</p>
+            <p className="text-1xl font-bold text-gray-900">{customer.invoiceNo != null ? `INV-${String(customer.invoiceNo).padStart(7, '0')}` : "—"}</p>
           </div>
 
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
@@ -239,7 +239,7 @@ export default function CustomerDetailPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-1xl font-bold text-gray-900">
               {customer.dueDate ? formatDate(customer.dueDate) : "—"}
             </p>
           </div>
