@@ -6,7 +6,7 @@ import { StatCard } from "../../../components/ui/StatCard";
 import { Pagination } from "../../../components/ui/Pagination";
 import { formatKES, formatDate } from "../../../lib/format";
 import type { Customer } from "../../../types/customer";
-
+import { useCustomerStore } from "../../../store/customerStore";
 type InvoiceStatus = "paid" | "pending" | "overdue" | "draft";
 
 type SearchBy = "email" | "userNo" | "phoneNumber" | "dueDate";
@@ -230,9 +230,27 @@ export default function CustomersPage() {
     page,
     limit: PAGE_SIZE,
   });
+
+  const setCustomers = useCustomerStore((state) => state.setCustomers);
+  const setTotal = useCustomerStore((state) => state.setTotal);
+  const setLoading = useCustomerStore((state) => state.setLoading);
+
+  useEffect(() => {
+    setLoading(isLoading);
+  }, [isLoading, setLoading]);
+
+  useEffect(() => {
+    if (data) {
+      setCustomers(data.data);
+      if (data.total != null) setTotal(data.total);
+    }
+  }, [data, setCustomers, setTotal]);
+
+  const customers = useCustomerStore((state) => state.customers);
+  const total = useCustomerStore((state) => state.total);
+  const loading = useCustomerStore((state) => state.isLoading);
+
   const { data: statsData, isLoading: statsLoading, isError: statsError } = useCustomerStats();
-  const customers = data?.data ?? [];
-  const total = data?.total;
   const totalCustomersDisplay = statsLoading
     ? "Loading..."
     : statsError
@@ -436,7 +454,7 @@ export default function CustomersPage() {
       {/* ── Table ── */}
       <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
 
-        {isLoading ? (
+        {loading ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

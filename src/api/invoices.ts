@@ -1,11 +1,10 @@
 import axios from "axios";
 import { API } from "./endpoints";
-import { invoicesMockApi } from "./invoicesMock";
 import type {
-  Invoice,
+  InvoiceListItem,
   CreateInvoiceRequest,
-  InvoiceListParams,
-  InvoiceListResponse,
+  InvoiceCreateResponse,
+  InvoicesFilterParams,
   InvoiceStats,
 } from "../types/invoice";
 
@@ -15,9 +14,7 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Reuses the same response interceptor shape as api/auth.ts and
-// api/customers.ts so getApiErrorMessage / getApiFieldErrors work
-// unchanged for invoice calls.
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -48,27 +45,36 @@ api.interceptors.response.use(
   }
 );
 
-const USE_MOCK = import.meta.env.VITE_USE_MOCK_INVOICES === "true";
-
 export const invoicesApi = {
-  list: async (params: InvoiceListParams): Promise<InvoiceListResponse> => {
-    if (USE_MOCK) return invoicesMockApi.list(params);
 
-    const res = await api.get<InvoiceListResponse>(API.INVOICES.LIST, { params });
+  list: async (params: InvoicesFilterParams): Promise<InvoiceListItem[]> => {
+    const apiPage = Math.max(0, (params.page ?? 1) - 1);
+
+    const queryParams = {
+      firstName: params.firstName,
+      lastName: params.lastName,
+      customerNo: params.customerNo,
+      invoiceNo: params.invoiceNo,
+      status: params.status === "all" ? undefined : params.status,
+      dueDateFrom: params.dueDateFrom,
+      dueDateTo: params.dueDateTo,
+      page: apiPage,
+      size: params.limit,
+    };
+
+    const res = await api.get<InvoiceListItem[]>(API.INVOICES.LIST, { params: queryParams });
     return res.data;
   },
 
-  create: async (input: CreateInvoiceRequest): Promise<Invoice> => {
-    if (USE_MOCK) return invoicesMockApi.create(input);
-
-    const res = await api.post<Invoice>(API.INVOICES.CREATE, input);
+  create: async (input: CreateInvoiceRequest): Promise<InvoiceCreateResponse> => {
+    const res = await api.post<InvoiceCreateResponse>(API.INVOICES.CREATE, input);
     return res.data;
   },
 
+  
   stats: async (): Promise<InvoiceStats> => {
-    if (USE_MOCK) return invoicesMockApi.stats();
-
     const res = await api.get<InvoiceStats>(API.INVOICES.STATS);
     return res.data;
   },
+
 };

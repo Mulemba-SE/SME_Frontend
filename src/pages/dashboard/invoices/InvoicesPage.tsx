@@ -5,7 +5,7 @@ import { getApiErrorMessage } from "../../../api/auth";
 import { StatCard } from "../../../components/ui/StatCard";
 import { Pagination } from "../../../components/ui/Pagination";
 import { formatKES, formatDate } from "../../../lib/format";
-import type { Invoice, InvoiceStatus } from "../../../types/invoice";
+import type { InvoiceListItem, InvoiceStatus } from "../../../types/invoice";
 
 const PAGE_SIZE = 8;
 
@@ -18,18 +18,24 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
   return debounced;
 }
 
-// Status Badge 
+// Status Badge
+const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string; label: string }> = {
+  DRAFT: { bg: "bg-gray-100 border-gray-200", text: "text-gray-500", dot: "bg-gray-400", label: "Draft" },
+  SENT: { bg: "bg-blue-50 border-blue-100", text: "text-blue-700", dot: "bg-blue-500", label: "Sent" },
+  PENDING: { bg: "bg-amber-50 border-amber-100", text: "text-amber-700", dot: "bg-amber-500", label: "Pending" },
+  OVERDUE: { bg: "bg-red-50 border-red-100", text: "text-red-600", dot: "bg-red-400", label: "Overdue" },
+  PAID: { bg: "bg-green-50 border-green-100", text: "text-green-700", dot: "bg-green-500", label: "Paid" },
+};
 
-const STATUS_STYLES: Record<InvoiceStatus, { bg: string; text: string; dot: string; label: string }> = {
-  draft: { bg: "bg-gray-100 border-gray-200", text: "text-gray-500", dot: "bg-gray-400", label: "Draft" },
-  sent: { bg: "bg-blue-50 border-blue-100", text: "text-blue-700", dot: "bg-blue-500", label: "Sent" },
-  pending: { bg: "bg-amber-50 border-amber-100", text: "text-amber-700", dot: "bg-amber-500", label: "Pending" },
-  overdue: { bg: "bg-red-50 border-red-100", text: "text-red-600", dot: "bg-red-400", label: "Overdue" },
-  paid: { bg: "bg-green-50 border-green-100", text: "text-green-700", dot: "bg-green-500", label: "Paid" },
+const DEFAULT_STATUS_STYLE = {
+  bg: "bg-gray-100 border-gray-200",
+  text: "text-gray-500",
+  dot: "bg-gray-400",
 };
 
 function StatusBadge({ status }: { status: InvoiceStatus }) {
-  const s = STATUS_STYLES[status];
+  const key = status.toUpperCase();
+  const s = STATUS_STYLES[key] ?? { ...DEFAULT_STATUS_STYLE, label: status };
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${s.bg} ${s.text}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
@@ -40,11 +46,11 @@ function StatusBadge({ status }: { status: InvoiceStatus }) {
 
 // Row Actions
 
-function RowActions({ invoiceId }: { invoiceId: string }) {
+function RowActions({ invoiceNo }: { invoiceNo: number }) {
   return (
     <div className="flex items-center justify-end gap-1.5">
       <Link
-        to={`/dashboard/invoices/${invoiceId}`}
+        to={`/dashboard/invoices/${invoiceNo}`}
         className="p-1.5 rounded-lg border border-gray-200 text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors"
         aria-label="View invoice"
       >
@@ -68,7 +74,7 @@ function RowActions({ invoiceId }: { invoiceId: string }) {
   );
 }
 
-// Skeleton 
+// Skeleton
 
 function TableSkeleton() {
   return (
@@ -138,26 +144,27 @@ function InlineError({ message }: { message: string }) {
 
 // Invoice Row
 
-function InvoiceRow({ invoice }: { invoice: Invoice }) {
+function InvoiceRow({ invoice }: { invoice: InvoiceListItem }) {
+  const customerName = [invoice.firstName, invoice.lastName].filter(Boolean).join(" ") || "—";
   return (
     <tr className="hover:bg-gray-50/70 transition-colors">
       <td className="px-4 py-3.5">
         <Link
-          to={`/dashboard/invoices/${invoice.id}`}
+          to={`/dashboard/invoices/${invoice.invoiceNo}`}
           className="font-semibold text-blue-600 hover:text-blue-700 text-sm"
         >
-          {invoice.invoiceNumber}
+          INV-{invoice.invoiceNo}
         </Link>
       </td>
-      <td className="px-4 py-3.5 text-sm font-medium text-gray-900">{invoice.customerName}</td>
-      <td className="px-4 py-3.5 text-sm text-gray-500">{formatDate(invoice.issueDate)}</td>
+      <td className="px-4 py-3.5 text-sm font-medium text-gray-900">{customerName}</td>
+      <td className="px-4 py-3.5 text-sm text-gray-500">{formatDate(invoice.createdAt)}</td>
       <td className="px-4 py-3.5 text-sm text-gray-500">{formatDate(invoice.dueDate)}</td>
-      <td className="px-4 py-3.5 text-sm font-semibold text-gray-800">{formatKES(invoice.amount)}</td>
+      <td className="px-4 py-3.5 text-sm font-semibold text-gray-800">{formatKES(invoice.invoiceTotal)}</td>
       <td className="px-4 py-3.5">
         <StatusBadge status={invoice.status} />
       </td>
       <td className="px-4 py-3.5 w-20">
-        <RowActions invoiceId={invoice.id} />
+        <RowActions invoiceNo={invoice.invoiceNo} />
       </td>
     </tr>
   );
@@ -175,23 +182,27 @@ function BellIcon() {
 }
 
 export default function InvoicesPage() {
-  const [searchInput, setSearchInput] = useState("");
+  const [searchInput, setSearchInput] = useState(""); // maps to firstName filter
   const [status, setStatus] = useState<InvoiceStatus | "all">("all");
   const [page, setPage] = useState(1);
 
   const search = useDebouncedValue(searchInput, 350);
 
+  // NOTE: the backend's InvocesFilterDTO doesn't have a generic "search"
   const { data, isLoading, isError, error, isFetching } = useInvoices({
-    search,
+    firstName: search || undefined,
     status,
     page,
     limit: PAGE_SIZE,
   });
-  const { data: stats } = useInvoiceStats();
 
-  const invoices = data?.data ?? [];
-  const total = data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  // NOTE: GET /invoices/stats doesn't exist on the backend yet, so this will 404
+  const { data: stats, isLoading: isStatsLoading, isError: isStatsError } = useInvoiceStats();
+  const statsUnavailable = isStatsLoading || isStatsError;
+
+  const invoices = data ?? [];
+  // Backend doesn't return a total count, so pagination has to guess
+  const totalPages = page + (invoices.length === PAGE_SIZE ? 1 : 0);
 
   const handleSearchChange = (value: string) => {
     setSearchInput(value);
@@ -233,11 +244,11 @@ export default function InvoicesPage() {
       </div>
 
       {/* ── Stat Cards ── */}
+     
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
         <StatCard
           label="Total Invoiced"
-          value={formatKES(stats?.totalInvoiced ?? 0)}
-          subtext={`${stats?.totalInvoicedCount ?? 0} invoices`}
+          value={statsUnavailable ? "—" : formatKES(stats?.totalInvoiced ?? 0)}
           iconBg="#EEF2FF"
           icon={
             <svg width="20" height="20" fill="none" stroke="#4F46E5" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -248,8 +259,7 @@ export default function InvoicesPage() {
         />
         <StatCard
           label="Paid Amount"
-          value={formatKES(stats?.paidAmount ?? 0)}
-          subtext={`${stats?.paidCount ?? 0} invoices paid`}
+          value={statsUnavailable ? "—" : formatKES(stats?.paidAmount ?? 0)}
           iconBg="#F0FDF4"
           icon={
             <svg width="20" height="20" fill="none" stroke="#16A34A" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -260,8 +270,7 @@ export default function InvoicesPage() {
         />
         <StatCard
           label="Outstanding"
-          value={formatKES(stats?.outstandingAmount ?? 0)}
-          subtext={`${stats?.overdueCount ?? 0} overdue invoices`}
+          value={statsUnavailable ? "—" : formatKES(stats?.outstandingAmount ?? 0)}
           iconBg="#FEF3C7"
           icon={
             <svg width="20" height="20" fill="none" stroke="#D97706" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -272,8 +281,7 @@ export default function InvoicesPage() {
         />
         <StatCard
           label="Draft Invoices"
-          value={String(stats?.draftCount ?? 0)}
-          subtext={`${stats?.draftCount ?? 0} draft invoices`}
+          value={statsUnavailable ? "—" : String(stats?.draftCount ?? 0)}
           iconBg="#F3E8FF"
           icon={
             <svg width="20" height="20" fill="none" stroke="#9333EA" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -299,7 +307,7 @@ export default function InvoicesPage() {
             type="text"
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="Search invoices..."
+            placeholder="Search by customer first name..."
             className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 bg-white rounded-xl outline-none
               placeholder:text-gray-400 text-gray-900
               focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
@@ -313,21 +321,27 @@ export default function InvoicesPage() {
             focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all sm:w-40"
         >
           <option value="all">All Status</option>
-          <option value="paid">Paid</option>
-          <option value="pending">Pending</option>
-          <option value="overdue">Overdue</option>
-          <option value="draft">Draft</option>
-          <option value="sent">Sent</option>
+          <option value="PAID">Paid</option>
+          <option value="PENDING">Pending</option>
+          <option value="OVERDUE">Overdue</option>
+          <option value="DRAFT">Draft</option>
+          <option value="SENT">Sent</option>
         </select>
 
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 bg-white rounded-xl text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors">
+          <button
+            type="button"
+            className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 bg-white rounded-xl text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors"
+          >
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
               <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
             </svg>
             Filter
           </button>
-          <button className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 bg-white rounded-xl text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors">
+          <button
+            type="button"
+            className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 bg-white rounded-xl text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors"
+          >
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
@@ -347,7 +361,7 @@ export default function InvoicesPage() {
                 <tr className="border-b border-gray-100 text-left">
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Invoice #</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Created</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Due Date</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
@@ -369,7 +383,7 @@ export default function InvoicesPage() {
                   <tr className="border-b border-gray-100 text-left">
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Invoice #</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Created</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Due Date</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
@@ -378,7 +392,7 @@ export default function InvoicesPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {invoices.map((invoice) => (
-                    <InvoiceRow key={invoice.id} invoice={invoice} />
+                    <InvoiceRow key={invoice.invoiceNo} invoice={invoice} />
                   ))}
                 </tbody>
               </table>
@@ -387,7 +401,7 @@ export default function InvoicesPage() {
             <Pagination
               page={page}
               totalPages={totalPages}
-              total={total}
+              itemCount={invoices.length}
               pageSize={PAGE_SIZE}
               isFetching={isFetching}
               onPageChange={setPage}

@@ -1,52 +1,66 @@
-// Invoice contract — share this shape with Kelvin before he builds the
-// backend, same as types/customer.ts. Mocked for now in api/invoicesMock.ts.
+export type InvoiceStatus = string;
 
-export type InvoiceStatus = "paid" | "pending" | "overdue" | "draft" | "sent";
 
-export interface Invoice {
-  id: string;
-  invoiceNumber: string; // e.g. "INV-0001"
-  customerId?: string; // present once linked to a real Customer record
-  customerName: string;
-  issueDate: string; // ISO date
-  dueDate: string; // ISO date
-  amount: number; // KES, major units (e.g. 25000 = KES 25,000.00)
+export interface InvoiceListItem {
+  firstName: string;
+  lastName: string;
+  customerNo: number;
+  invoiceNo: number;
   status: InvoiceStatus;
-  createdAt: string; // ISO timestamp
+  dueDate: string; 
+  createdAt: string; 
+  amountPaid: number;
+  invoiceTotal: number;
 }
 
 export interface CreateInvoiceRequest {
-  customerId?: string;
-  customerName: string;
-  issueDate: string;
-  dueDate: string;
-  amount: number;
-  status?: InvoiceStatus;
+  customerNo: number;
+  dueDate: string; 
+  items: InvoiceLineItem[];
 }
 
-export interface InvoiceListParams {
-  search?: string;
+export interface InvoiceLineItem {
+  itemName: string;
+  unitPrice: number;
+  quantity: number;
+  tax: number;
+}
+
+export interface InvoiceItemResult {
+  itemName: string;
+  unitPrice: number;
+  quantity: number;
+  tax: number;
+  tax_total: number;
+  total: number;
+}
+
+export interface InvoiceCreateResponse {
+  invoiceNo: number;
+  status: InvoiceStatus;
+  customerNo: number;
+  createdAt: string;
+  dueDate: string;
+  items: InvoiceItemResult[];
+  totalTax: number;
+  total: number;
+}
+
+export interface InvoicesFilterParams {
+  firstName?: string;
+  lastName?: string;
+  customerNo?: number;
+  invoiceNo?: number;
   status?: InvoiceStatus | "all";
-  page?: number;
+  dueDateFrom?: string;
+  dueDateTo?: string;
+  page?: number; 
   limit?: number;
 }
 
-export interface InvoiceListResponse {
-  data: Invoice[];
-  total: number;
-  page: number;
-  limit: number;
-}
-
-// Aggregate figures for the stat cards — computed across *all* invoices,
-// independent of the current page/search/filter, the same way a real
-// backend summary endpoint would work.
 export interface InvoiceStats {
   totalInvoiced: number;
-  totalInvoicedCount: number;
   paidAmount: number;
-  paidCount: number;
   outstandingAmount: number;
-  overdueCount: number;
   draftCount: number;
 }

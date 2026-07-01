@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { invoicesApi } from "../api/invoices";
-import type { InvoiceListParams } from "../types/invoice";
+import type { InvoicesFilterParams } from "../types/invoice";
 
 const INVOICES_KEY = "invoices";
 
-export function useInvoices(params: InvoiceListParams) {
+export function useInvoices(params: InvoicesFilterParams) {
   return useQuery({
     queryKey: [INVOICES_KEY, params],
     queryFn: () => invoicesApi.list(params),
-    placeholderData: (previous) => previous, // keep old rows visible while refetching
+    placeholderData: (previous) => previous,
   });
 }
 

@@ -7,6 +7,7 @@ import NewCustomerPage from './pages/dashboard/customers/NewCustomerPage'
 import CustomerDetailPage from './pages/dashboard/customers/CustomerDetailPage'
 import InvoicesPage from './pages/dashboard/invoices/InvoicesPage'
 import NewInvoicePage from './pages/dashboard/invoices/NewInvoicePage'
+import PaymentsPage from './pages/dashboard/payments/PaymentsPage'
 import DashboardLayout from './components/layout/DashboardLayout'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import { useEffect, useState } from 'react'
@@ -54,7 +55,7 @@ function AppRoutes() {
         <Route path="invoices" element={<InvoicesPage />} />
         <Route path="invoices/new" element={<NewInvoicePage />} />
         <Route path="invoices/:id" element={<ComingSoon title="Invoice details" />} />
-        <Route path="payments" element={<ComingSoon title="Payments" />} />
+        <Route path="payments" element={<PaymentsPage />} />
         <Route path="reports" element={<ComingSoon title="Reports" />} />
       </Route>
 

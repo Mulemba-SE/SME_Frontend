@@ -101,7 +101,7 @@ function ErrorState({ userNo }: { userNo: string }) {
         </svg>
       </div>
       <p className="text-sm font-semibold text-gray-900 mb-1">Customer not found</p>
-      <p className="text-sm text-gray-500 mb-4">No customer with ID #{userNo} could be found.</p>
+      <p className="text-sm text-gray-500 mb-4">No customer with ID {userNo} could be found.</p>
       <Link
         to="/dashboard/customers"
         className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
@@ -117,7 +117,6 @@ function ErrorState({ userNo }: { userNo: string }) {
 export default function CustomerDetailPage() {
   const { userNo } = useParams<{ userNo: string }>();
 
-  // Fetch customer by filtering the list by customerNo
   const { data, isLoading, isError } = useQuery({
     queryKey: ["customer", userNo],
     queryFn: async () => {
@@ -159,7 +158,7 @@ export default function CustomerDetailPage() {
                     ? `${customer.firstName} ${customer.lastName}`
                     : customer.firstName || customer.email}
                 </h1>
-                <span className="text-white text-sm font-medium mb-1 block">#{customer.userNo}</span>
+                <span className="text-white text-sm font-medium mb-1 block">{customer.userNo}</span>
                 <div className="flex items-center gap-2 text-white text-base">
                   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                     <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -254,7 +253,7 @@ export default function CustomerDetailPage() {
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-4">Customer Information</h2>
             <div>
-              <DetailRow label="Customer No." value={`#${customer.userNo}`} />
+              <DetailRow label="Customer No." value={`${customer.userNo}`} />
               <DetailRow label="First Name" value={customer.firstName || "—"} />
               <DetailRow label="Last Name" value={customer.lastName || "—"} />
               <DetailRow label="Email" value={customer.email || "—"} />

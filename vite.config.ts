@@ -15,6 +15,18 @@ export default defineConfig({
       '/me': { target: 'http://localhost:8081', changeOrigin: true },
       '/api': { target: 'http://localhost:8081', changeOrigin: true },
       '/customer': { target: 'http://localhost:8081', changeOrigin: true },
+      '/invoices': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (_proxyReq, req) => {
+            console.log('[proxy] forwarding ->', req.method, req.url)
+          })
+          proxy.on('error', (err, req) => {
+            console.log('[proxy] ERROR on', req.url, err.message)
+          })
+        },
+      },
     },
   },
 })

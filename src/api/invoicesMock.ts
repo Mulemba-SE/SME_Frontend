@@ -67,15 +67,20 @@ export const invoicesMockApi = {
   },
 
   create: async (input: CreateInvoiceRequest): Promise<Invoice> => {
+    const amount = input.items.reduce(
+      (sum, item) => sum + item.unitPrice * item.quantity,
+      0
+    );
+
     const newInvoice: Invoice = {
       id: uid(),
       invoiceNumber: nextInvoiceNumber(),
-      customerId: input.customerId,
-      customerName: input.customerName.trim(),
-      issueDate: input.issueDate,
+      customerId: input.customerNo,
+      customerName: ` ${input.customerNo.slice(0, 8)}`,
+      issueDate: new Date().toISOString().slice(0, 10),
       dueDate: input.dueDate,
-      amount: input.amount,
-      status: input.status ?? "draft",
+      amount,
+      status: "draft",
       createdAt: isoNow(),
     };
 

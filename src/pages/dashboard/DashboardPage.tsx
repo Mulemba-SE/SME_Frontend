@@ -1,7 +1,7 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useCustomerStats } from "../../hooks/useCustomers";
-import { useInvoices, useInvoiceStats } from "../../hooks/useInvoices";
+import { useInvoices } from "../../hooks/useInvoices";
 import { formatKES, formatDate } from "../../lib/format";
 
 interface StatCardProps {
@@ -69,17 +69,18 @@ function QuickAction({ label, description, icon, onClick, comingSoon }: QuickAct
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: stats } = useInvoiceStats();
-  const { data: recentInvoicesResponse, isLoading: recentLoading, isError: recentError } = useInvoices({ status: "all", page: 1, limit: 4 });
+  // NOTE: invoice-level stats (revenue, outstanding, etc.) previously came
+  // from GET /invoices/stats, which doesn't exist on the backend yet —
+  // those cards below show placeholders until that endpoint is built.
+  const { data: recentInvoices = [], isLoading: recentLoading, isError: recentError } = useInvoices({ status: "all", page: 1, limit: 4 });
 
   const firstName = user?.firstName ?? "there";
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  const { data:statsData } = useCustomerStats();
+  const { data: statsData } = useCustomerStats();
   const customerCount = statsData?.totalCustomers ?? 0;
-  const recentInvoices = recentInvoicesResponse?.data ?? [];  
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -97,8 +98,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
           label="Total Revenue"
-          value={formatKES(stats?.totalInvoiced ?? 0)}
-          sub={stats?.totalInvoicedCount ? `${stats.totalInvoicedCount} invoices` : "No invoices yet"}
+          value="—"
+          sub="Needs GET /invoices/stats"
           accent="bg-blue-50"
           icon={
             <svg width="18" height="18" fill="none" stroke="#2563eb" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -109,8 +110,8 @@ export default function DashboardPage() {
         />
         <StatCard
           label="Outstanding"
-          value={formatKES(stats?.outstandingAmount ?? 0)}
-          sub={stats?.overdueCount ? `${stats.overdueCount} overdue` : "No overdue invoices"}
+          value="—"
+          sub="Needs GET /invoices/stats"
           accent="bg-amber-50"
           icon={
             <svg width="18" height="18" fill="none" stroke="#d97706" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -121,8 +122,8 @@ export default function DashboardPage() {
         />
         <StatCard
           label="Invoices Sent"
-          value={String(stats?.totalInvoicedCount ?? 0)}
-          sub="All invoices created"
+          value="—"
+          sub="Needs GET /invoices/stats"
           accent="bg-green-50"
           icon={
             <svg width="18" height="18" fill="none" stroke="#16a34a" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -248,15 +249,17 @@ export default function DashboardPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {recentInvoices.map((invoice) => (
-                    <tr key={invoice.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={invoice.invoiceNo} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 text-sm font-semibold text-blue-600">
-                        <Link to={`/dashboard/invoices/${invoice.id}`} className="hover:underline">
-                          {invoice.invoiceNumber}
+                        <Link to={`/dashboard/invoices/${invoice.invoiceNo}`} className="hover:underline">
+                          INV-{invoice.invoiceNo}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{invoice.customerName}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {[invoice.firstName, invoice.lastName].filter(Boolean).join(" ") || "—"}
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-500">{formatDate(invoice.dueDate)}</td>
-                      <td className="px-4 py-3 text-sm font-semibold text-gray-900">{formatKES(invoice.amount)}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-900">{formatKES(invoice.invoiceTotal)}</td>
                       <td className="px-4 py-3 text-sm uppercase text-gray-500">{invoice.status}</td>
                     </tr>
                   ))}

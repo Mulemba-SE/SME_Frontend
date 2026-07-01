@@ -37,6 +37,8 @@ const TIPS = [
   "Customer name should match their official records",
 ];
 
+const PHONE_REGEX = /^7[0-9]{8}$/;
+
 function validate(form: FormState): Record<string, string> {
   const errors: Record<string, string> = {};
 
@@ -44,6 +46,10 @@ function validate(form: FormState): Record<string, string> {
 
   if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
     errors.email = "Enter a valid email address.";
+  }
+
+  if (form.phone.trim() && !PHONE_REGEX.test(form.phone.trim())) {
+    errors.phone = "Enter a valid phone number";
   }
 
   return errors;
@@ -99,6 +105,11 @@ export default function NewCustomerPage() {
   const handleChange =
     (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       set(field, e.target.value);
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digitsOnly = e.target.value.replace(/\D/g, "");
+    set("phone", digitsOnly);
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -217,15 +228,18 @@ export default function NewCustomerPage() {
                     </select>
                     <input
                       type="tel"
-                      placeholder="Enter phone number"
+                      inputMode="numeric"
+                      pattern="[0-9]{9}"
+                      placeholder="712345678"
                       value={form.phone}
-                      onChange={handleChange("phone")}
+                      onChange={handlePhoneChange}
                       className={`flex-1 min-w-0 px-3 py-2.5 text-sm border rounded-r-lg outline-none transition-all
                         placeholder:text-gray-400 text-gray-900 border-gray-300 bg-white
                         focus:border-blue-600 focus:ring-2 focus:ring-blue-100
                         ${fieldErrors.phone ? "border-red-400 focus:border-red-500 focus:ring-red-100" : ""}`}
                     />
                   </div>
+                  <p className="text-xs text-gray-500">Format: {form.phoneCountryCode} 712345678</p>
                   {fieldErrors.phone && <p className="text-xs text-red-500">{fieldErrors.phone}</p>}
                 </div>
               </div>
