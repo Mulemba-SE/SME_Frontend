@@ -1,7 +1,9 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { customersApi } from "../../../api/customers";
+import { invoicesApi } from "../../../api/invoices";
 import { formatKES, formatDate } from "../../../lib/format";
+import type { InvoiceListItem } from "../../../types/invoice";
 
 // ── Avatar 
 
@@ -51,7 +53,8 @@ const STATUS_STYLES: Record<InvoiceStatus, { bg: string; text: string; dot: stri
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const s = STATUS_STYLES[status as InvoiceStatus] ?? {
+  const normalizedStatus = status?.toLowerCase();
+  const s = STATUS_STYLES[normalizedStatus as InvoiceStatus] ?? {
     bg: "bg-gray-100 border-gray-200", text: "text-gray-500", dot: "bg-gray-400", label: status,
   };
   return (
@@ -117,7 +120,9 @@ function ErrorState({ userNo }: { userNo: string }) {
 export default function CustomerDetailPage() {
   const { userNo } = useParams<{ userNo: string }>();
 
-  const { data, isLoading, isError } = useQuery({
+  const customerId = Number(userNo);
+
+  const { data: customerList, isLoading: isCustomerLoading, isError: isCustomerError } = useQuery({
     queryKey: ["customer", userNo],
     queryFn: async () => {
       const res = await customersApi.list({
@@ -126,16 +131,50 @@ export default function CustomerDetailPage() {
         page: 1,
         limit: 1,
       });
-      return res.data[0] ?? null;
+      return res;
     },
-    enabled: Boolean(userNo),
+    enabled: Boolean(userNo && !Number.isNaN(customerId)),
   });
 
-  if (isLoading) return <Skeleton />;
-  if (isError || data === null) return <ErrorState userNo={userNo ?? ""} />;
-  if (!data) return <ErrorState userNo={userNo ?? ""} />;
+  const { data: invoices = [], isLoading: isInvoicesLoading, isError: isInvoicesError } = useQuery({
+    queryKey: ["customer-invoices", userNo],
+    queryFn: async () => {
+      if (!userNo || Number.isNaN(customerId)) return [] as InvoiceListItem[];
+      return invoicesApi.list({
+        customerNo: customerId,
+        page: 1,
+        limit: 100,
+      });
+    },
+    enabled: Boolean(userNo && !Number.isNaN(customerId)),
+  });
 
-  const customer = data;
+  const customer = customerList?.data?.[0] ?? null;
+  const reconciledInvoices = (invoices ?? []).filter(
+    (invoice) => Number(invoice.customerNo) === customerId
+  );
+  const latestInvoice = reconciledInvoices[0] ?? null;
+  const totalInvoiceCount = reconciledInvoices.length;
+  const totalInvoiceValue = reconciledInvoices.reduce((sum, invoice) => sum + Number(invoice.invoiceTotal ?? 0), 0);
+  const totalAmountPaid = reconciledInvoices.reduce((sum, invoice) => sum + Number(invoice.amountPaid ?? 0), 0);
+  const totalOutstanding = Math.max(0, totalInvoiceValue - totalAmountPaid);
+
+  const displayName = [latestInvoice?.firstName, latestInvoice?.lastName, customer?.firstName, customer?.lastName]
+    .filter(Boolean)
+    .join(" ") || customer?.email || "—";
+
+  const latestInvoiceNumber = latestInvoice?.invoiceNo != null
+    ? `INV-${String(latestInvoice.invoiceNo).padStart(7, "0")}`
+    : customer?.invoiceNo != null
+      ? `INV-${String(customer.invoiceNo).padStart(7, "0")}`
+      : "—";
+
+  const latestInvoiceDate = latestInvoice?.dueDate ?? customer?.dueDate ?? null;
+  const latestInvoiceStatus = latestInvoice?.status ?? customer?.status ?? "—";
+
+  if (isCustomerLoading || isInvoicesLoading) return <Skeleton />;
+  if (isCustomerError || isInvoicesError || customer === null) return <ErrorState userNo={userNo ?? ""} />;
+  if (!customer) return <ErrorState userNo={userNo ?? ""} />;
 
   return (
     <div className="w-full">
@@ -146,17 +185,13 @@ export default function CustomerDetailPage() {
             <div className="flex items-center gap-3 flex-1">
               <Avatar
                 name={
-                  customer.lastName
-                    ? `${customer.firstName} ${customer.lastName}`
-                    : customer.firstName || customer.email
+                  [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email || "Customer"
                 }
                 size="sm"
               />
               <div className="flex-1">
                 <h1 className="text-2xl font-bold text-white mb-1">
-                  {customer.lastName
-                    ? `${customer.firstName} ${customer.lastName}`
-                    : customer.firstName || customer.email}
+                  {displayName}
                 </h1>
                 <span className="text-white text-sm font-medium mb-1 block">{customer.userNo}</span>
                 <div className="flex items-center gap-2 text-white text-base">
@@ -198,7 +233,7 @@ export default function CustomerDetailPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-1xl font-bold text-gray-900">{customer.invoiceNo ?? "—"}</p>
+            <p className="text-1xl font-bold text-gray-900">{totalInvoiceCount}</p>
           </div>
 
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
@@ -212,7 +247,7 @@ export default function CustomerDetailPage() {
               </div>
             </div>
             <p className="text-1xl font-bold text-gray-900">
-              {customer.total != null ? formatKES(customer.total) : "—"}
+              {totalOutstanding > 0 ? formatKES(totalOutstanding) : "—"}
             </p>
           </div>
 
@@ -226,7 +261,7 @@ export default function CustomerDetailPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-1xl font-bold text-gray-900">{customer.invoiceNo != null ? `INV-${String(customer.invoiceNo).padStart(7, '0')}` : "—"}</p>
+            <p className="text-1xl font-bold text-gray-900">{latestInvoiceNumber}</p>
           </div>
 
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
@@ -240,7 +275,7 @@ export default function CustomerDetailPage() {
               </div>
             </div>
             <p className="text-1xl font-bold text-gray-900">
-              {customer.dueDate ? formatDate(customer.dueDate) : "—"}
+              {latestInvoiceDate ? formatDate(latestInvoiceDate) : "—"}
             </p>
           </div>
         </div>
@@ -253,9 +288,8 @@ export default function CustomerDetailPage() {
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-4">Customer Information</h2>
             <div>
-              <DetailRow label="Customer No." value={`${customer.userNo}`} />
-              <DetailRow label="First Name" value={customer.firstName || "—"} />
-              <DetailRow label="Last Name" value={customer.lastName || "—"} />
+              <DetailRow label="Customer No." value={customer.userNo || "—"} />
+              <DetailRow label="Name" value={displayName} />
               <DetailRow label="Email" value={customer.email || "—"} />
               <DetailRow label="Phone" value={customer.phoneNumber || "—"} />
             </div>
@@ -265,43 +299,33 @@ export default function CustomerDetailPage() {
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-4">Latest Invoice</h2>
             <div>
-              <DetailRow label="Invoice No." value={customer.invoiceNo != null ? `INV-${String(customer.invoiceNo).padStart(7, '0')}` : "—"} />
-              <DetailRow label="Due Date" value={customer.dueDate ? formatDate(customer.dueDate) : "—"} />
+              <DetailRow label="Invoice No." value={latestInvoiceNumber} />
+              <DetailRow label="Due Date" value={latestInvoiceDate ? formatDate(latestInvoiceDate) : "—"} />
               <DetailRow
-                label="Total Amount"
+                label="Invoice Total"
                 value={
                   <span className="text-gray-900 font-semibold">
-                    {customer.total != null ? formatKES(customer.total) : "—"}
+                    {totalInvoiceValue > 0 ? formatKES(totalInvoiceValue) : "—"}
                   </span>
                 }
               />
               <DetailRow
-                label="Total Tax"
+                label="Amount Paid"
                 value={
                   <span className="text-gray-900 font-semibold">
-                    {customer.totalTax != null ? formatKES(customer.totalTax) : "—"}
+                    {totalAmountPaid > 0 ? formatKES(totalAmountPaid) : "—"}
                   </span>
                 }
               />
               <DetailRow
-                label="Total Amount Paid"
+                label="Outstanding"
                 value={
                   <span className="text-gray-900 font-semibold">
-                    {customer.amountPaid != null ? formatKES(customer.amountPaid) : "—"}
+                    {totalOutstanding > 0 ? formatKES(totalOutstanding) : "—"}
                   </span>
                 }
               />
-              <DetailRow
-                label="Due Amount"
-                value={
-                  <span className="text-gray-900 font-semibold">
-                    {customer.total != null
-                      ? formatKES(Math.max(0, customer.total - (customer.amountPaid ?? 0)))
-                      : "—"}
-                  </span>
-                }
-              />
-              <DetailRow label="Payment Status" value={<StatusBadge status={customer.status} />} />
+              <DetailRow label="Payment Status" value={<StatusBadge status={latestInvoiceStatus} />} />
             </div>
           </div>
         </div>

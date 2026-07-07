@@ -147,7 +147,13 @@ function InlineError({ message }: { message: string }) {
 }
 
 function deriveRow(c: Customer) {
-  return { totalDue: c.total != null ? c.total : undefined };
+  return { totalDue: c.total != null ? Number(c.total) : undefined };
+}
+
+function getCustomerRowKey(customer: Customer) {
+  const userNo = customer.userNo != null ? String(customer.userNo) : "unknown";
+  const invoiceNo = customer.invoiceNo != null ? String(customer.invoiceNo) : "none";
+  return `${userNo}-${invoiceNo}`;
 }
 
 function CustomerRow({
@@ -161,6 +167,7 @@ function CustomerRow({
 }) {
   const navigate = useNavigate();
   const { totalDue } = deriveRow(customer);
+  const customerName = [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email || "Customer";
 
   return (
     <tr
@@ -177,16 +184,16 @@ function CustomerRow({
       </td>
       <td className="px-4 py-3.5">
         <div className="flex items-center gap-3">
-          <Avatar name={customer.email ?? customer.userNo ?? "?"} />
+          <Avatar name={customerName} />
           <div>
-            <span className="font-semibold text-gray-900 text-sm block">{customer.userNo}</span>
+            <span className="font-semibold text-gray-900 text-sm block">{customer.userNo || "—"}</span>
           </div>
         </div>
       </td>
       <td className="px-4 py-3.5 text-sm text-gray-500">{customer.email || "—"}</td>
       <td className="px-4 py-3.5 text-sm text-gray-500">{customer.phoneNumber || "—"}</td>
       <td className="px-4 py-3.5 text-sm text-gray-500">{customer.invoiceNo ?? "—"}</td>
-      <td className="px-4 py-3.5 text-sm font-semibold">
+      <td className="px-4 py-3.5 text-sm font-semibold whitespace-nowrap">
         {totalDue == null ? (
           <span className="text-sm text-gray-500">—</span>
         ) : totalDue === 0 ? (
@@ -195,10 +202,10 @@ function CustomerRow({
           <span className="text-gray-800">{formatKES(totalDue)}</span>
         )}
       </td>
-      <td className="px-4 py-3.5">
-        <StatusBadge status={customer.status} />
+      <td className="px-4 py-3.5 whitespace-nowrap">
+        <StatusBadge status={customer.status ?? "—"} />
       </td>
-      <td className="px-4 py-3.5 text-sm text-gray-500">
+      <td className="px-4 py-3.5 text-sm text-gray-500 whitespace-nowrap">
         {customer.dueDate ? formatDate(customer.dueDate) : "—"}
       </td>
     </tr>
@@ -485,7 +492,7 @@ export default function CustomersPage() {
                 <tbody className="divide-y divide-gray-50">
                   {customers.map((customer) => (
                     <CustomerRow
-                      key={`${customer.userNo}-${customer.invoiceNo ?? "none"}`} //Defensive reconciliation key in case of duplicate userNo with different invoiceNo
+                      key={getCustomerRowKey(customer)}
                       customer={customer}
                       selected={selected.has(customer.userNo.toString())}
                       onToggle={() => toggleOne(customer.userNo.toString())}

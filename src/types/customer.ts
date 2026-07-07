@@ -1,16 +1,16 @@
 //CustomerInvoiceResDTO
 export interface Customer {
-  userNo: bigint;
-  firstName: string;
+  userNo: string;
+  firstName?: string;
   lastName?: string;
-  email: string;
-  phoneNumber: string;
-  invoiceNo: number;
-  status: string;
-  total?: number;
-  totalTax?: number;
-  amountPaid?: number;
-  dueDate: string;
+  email?: string;
+  phoneNumber?: string | null;
+  invoiceNo?: number | null;
+  status?: string | null;
+  total?: number | null;
+  totalTax?: number | null;
+  amountPaid?: number | null;
+  dueDate?: string | null;
 }
 
 export interface CreateCustomerRequest {

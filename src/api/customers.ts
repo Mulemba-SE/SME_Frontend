@@ -14,6 +14,24 @@ const api = axios.create({
   withCredentials: true,
 });
 
+function normalizeCustomer(raw: Partial<Customer> & Record<string, unknown>): Customer {
+  return {
+    userNo: typeof raw.userNo === "string" || typeof raw.userNo === "number"
+      ? String(raw.userNo)
+      : "",
+    firstName: typeof raw.firstName === "string" ? raw.firstName : undefined,
+    lastName: typeof raw.lastName === "string" ? raw.lastName : undefined,
+    email: typeof raw.email === "string" ? raw.email : undefined,
+    phoneNumber: typeof raw.phoneNumber === "string" ? raw.phoneNumber : undefined,
+    invoiceNo: raw.invoiceNo != null ? Number(raw.invoiceNo) : undefined,
+    status: typeof raw.status === "string" ? raw.status : undefined,
+    total: raw.total != null ? Number(raw.total) : undefined,
+    totalTax: raw.totalTax != null ? Number(raw.totalTax) : undefined,
+    amountPaid: raw.amountPaid != null ? Number(raw.amountPaid) : undefined,
+    dueDate: typeof raw.dueDate === "string" ? raw.dueDate : undefined,
+  };
+}
+
 // Global error interceptor (already good)
 api.interceptors.response.use(
   (response) => response,
@@ -60,14 +78,14 @@ export const customersApi = {
       size: params.limit,
     };
 
-    const res = await api.get<Customer[]>(API.CUSTOMERS.LIST, {
+    const res = await api.get<Partial<Customer>[]>(API.CUSTOMERS.LIST, {
       params: queryParams,
     });
 
     const currentPage = params.page ?? 1;
 
     return {
-      data: res.data,
+      data: (res.data ?? []).map(normalizeCustomer),
       page: currentPage,
       limit: params.limit ?? 10,
     };

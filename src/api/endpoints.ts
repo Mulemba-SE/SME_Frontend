@@ -15,7 +15,13 @@ export const API = {
   INVOICES: {
     LIST: "/invoices",            
     CREATE: "/invoices",
-    STATS: "/invoices/stats",
+    STATS: "/invoices/dashboard",
+    DETAIL: "/invoices/detailed-invoice",
   },
+
+  PAYMENTS: {
+  LIST: "/payments",
+  STATS: "/payments/dashboard",
+},
 
 } as const;

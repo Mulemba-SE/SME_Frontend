@@ -1,22 +1,25 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { usePayments, usePaymentStats, useConfirmPayment, useFailPayment } from "../../../hooks/usePayments";
+import { getApiErrorMessage } from "../../../api/auth";
 import { StatCard } from "../../../components/ui/StatCard";
 import { Pagination } from "../../../components/ui/Pagination";
 import { formatKES, formatDate } from "../../../lib/format";
-import type { Payment } from "../../../types/payment";
+import type { PaymentListItem, PaymentStatus } from "../../../types/payment";
 
 const PAGE_SIZE = 10;
 
-const STATUS_STYLES = {
-  paid: { bg: "bg-green-50 border-green-100", text: "text-green-700", label: "Paid" },
-  pending: { bg: "bg-amber-50 border-amber-100", text: "text-amber-700", label: "Pending" },
-  overdue: { bg: "bg-red-50 border-red-100", text: "text-red-600", label: "Overdue" },
+const STATUS_STYLES: Record<PaymentStatus, { bg: string; text: string; dot: string; label: string }> = {
+  confirmed: { bg: "bg-green-50 border-green-100", text: "text-green-700", dot: "bg-green-500", label: "Confirmed" },
+  pending: { bg: "bg-amber-50 border-amber-100", text: "text-amber-700", dot: "bg-amber-500", label: "Pending" },
+  failed: { bg: "bg-red-50 border-red-100", text: "text-red-600", dot: "bg-red-400", label: "Failed" },
 };
 
-function StatusBadge({ status }: { status: "paid" | "pending" | "overdue" }) {
-  const s = STATUS_STYLES[status] || STATUS_STYLES.pending;
+function StatusBadge({ status }: { status: PaymentStatus }) {
+  const s = STATUS_STYLES[status] ?? STATUS_STYLES.pending;
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${s.bg} ${s.text}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${s.bg} ${s.text}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
       {s.label}
     </span>
   );
@@ -35,179 +38,305 @@ function MethodBadge({ method }: { method: string }) {
   );
 }
 
-function PaymentRow({ payment }: { payment: Payment }) {
+function InlineEmpty({ hasFilters }: { hasFilters: boolean }) {
   return (
-    <tr className="hover:bg-gray-50 transition-colors">
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">
-            {payment.paymentId.slice(0, 2)}
+    <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+      <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mb-4">
+        <svg width="24" height="24" fill="none" stroke="#2563eb" strokeWidth="1.8" viewBox="0 0 24 24">
+          <path d="M12 2v20" />
+          <path d="M2 12h20" />
+        </svg>
+      </div>
+      <p className="text-sm font-semibold text-gray-900 mb-1">
+        {hasFilters ? "No payments match these filters" : "No payments yet"}
+      </p>
+      <p className="text-sm text-gray-500">
+        {hasFilters ? "Try a different search or clear the filters." : "Payments will appear here once recorded."}
+      </p>
+    </div>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <tbody className="divide-y divide-gray-100">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <tr key={i} className="animate-pulse">
+          <td className="px-4 py-3.5 w-10"><div className="w-4 h-4 bg-gray-100 rounded" /></td>
+          <td className="px-4 py-3.5 sm:px-6">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gray-100" />
+              <div className="h-3.5 bg-gray-100 rounded w-24" />
+            </div>
+          </td>
+          <td className="px-4 py-3.5 sm:px-6"><div className="h-3 bg-gray-100 rounded w-32" /></td>
+          <td className="px-4 py-3.5 sm:px-6"><div className="h-3 bg-gray-100 rounded w-24" /></td>
+          <td className="px-4 py-3.5 sm:px-6"><div className="h-3 bg-gray-100 rounded w-20" /></td>
+          <td className="px-4 py-3.5 sm:px-6"><div className="h-3 bg-gray-100 rounded w-24" /></td>
+          <td className="px-4 py-3.5 sm:px-6"><div className="h-3 bg-gray-100 rounded w-20" /></td>
+          <td className="px-4 py-3.5 sm:px-6"><div className="h-3 bg-gray-100 rounded w-24" /></td>
+          <td className="px-4 py-3.5 sm:px-6"><div className="h-5 bg-gray-100 rounded-full w-16" /></td>
+        </tr>
+      ))}
+    </tbody>
+  );
+}
+
+function InlineError({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+      <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mb-4">
+        <svg width="24" height="24" fill="none" stroke="#dc2626" strokeWidth="1.8" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
+      <p className="text-sm font-semibold text-gray-900 mb-1">Couldn't load payments</p>
+      <p className="text-sm text-gray-500 max-w-xs">{message}</p>
+    </div>
+  );
+}
+
+function PaymentRow({
+  payment,
+}: {
+  payment: PaymentListItem;
+  onConfirm: (id: string) => void;
+  onFail: (id: string) => void;
+  actioningId: string | null;
+}) {
+  const customerLabel = payment.customerNo ? `${payment.customerNo}` : "—";
+
+  return (
+    <tr className="hover:bg-gray-50/80 transition-colors">
+      <td className="px-4 py-3.5 sm:px-6 whitespace-nowrap">
+        <Link to={`/dashboard/invoices/${payment.invoiceNo}`} className="flex items-center gap-3">
+          
+          <div>
+            <span className="font-semibold text-gray-900 block">INV-{payment.invoiceNo}</span>
           </div>
-          <span className="font-semibold text-gray-900">{payment.paymentId}</span>
-        </div>
-      </td>
-      <td className="px-6 py-4">
-        <div>
-          <div className="font-medium text-gray-900">{payment.customerName}</div>
-          <div className="text-sm text-gray-500">{payment.customerEmail}</div>
-        </div>
-      </td>
-      <td className="px-6 py-4">
-        <Link to={`/dashboard/invoices/${payment.invoiceId}`} className="text-blue-600 hover:underline font-medium">
-          {payment.invoiceNumber}
         </Link>
       </td>
-      <td className="px-6 py-4 text-sm text-gray-600">
-        {formatDate(payment.paymentDate)}
-        <br />
-        <span className="text-xs text-gray-400">
-          {new Date(payment.paymentDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-        </span>
+      <td className="px-4 py-3.5 sm:px-6">
+        <div>
+          <div className="font-medium text-gray-900">{customerLabel}</div>
+          {payment.notes ? <div className="text-sm text-gray-500">{payment.notes}</div> : null}
+        </div>
       </td>
-      <td className="px-6 py-4 font-semibold text-gray-900">{formatKES(payment.amount)}</td>
-      <td className="px-6 py-4">
-        <MethodBadge method={payment.method} />
-      </td>
-      <td className="px-6 py-4">
-        <StatusBadge status={payment.status} />
-      </td>
-      <td className="px-6 py-4 text-sm text-gray-600 font-mono">{payment.reference}</td>
-      <td className="px-6 py-4 text-right text-gray-400 hover:text-gray-600 cursor-pointer">⋯</td>
+      <td className="px-4 py-3.5 sm:px-6 text-sm text-gray-600 whitespace-nowrap">{formatDate(payment.paymentAt)}</td>
+      <td className="px-4 py-3.5 sm:px-6 font-semibold text-gray-900 whitespace-nowrap">{formatKES(payment.amount)}</td>
+      <td className="px-4 py-3.5 sm:px-6"><MethodBadge method={payment.paymentMethod} /></td>
+      <td className="px-4 py-3.5 sm:px-6"><StatusBadge status={payment.status} /></td>
+      <td className="px-4 py-3.5 sm:px-6 text-sm text-gray-600 font-mono">{payment.transactionRef || "-"}</td>
+      
     </tr>
   );
 }
 
 export default function PaymentsPage() {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "pending" | "overdue">("all");
+  const [searchInput, setSearchInput] = useState("");
+  const [statusFilter, setStatusFilter] = useState<PaymentStatus | "all">("all");
   const [page, setPage] = useState(1);
-  const isFetching = false; // Replace with real query state later
 
-  // Mock data (replace with usePayments hook)
-  const payments: Payment[] = [
-    {
-      id: "1",
-      paymentId: "PAY-00005",
-      customerName: "Evans Musyoki",
-      customerEmail: "evansmusyoki@gmail.com",
-      invoiceNumber: "INV-0012",
-      invoiceId: "inv-12",
-      paymentDate: "2025-06-03T10:30:00",
-      amount: 80000,
-      method: "Bank Transfer",
-      status: "paid",
-      reference: "KCB32456789",
-    },
-    {
-      id: "2",
-      paymentId: "PAY-00004",
-      customerName: "Joshua Odhiambo",
-      customerEmail: "joshua@gmail.com",
-      invoiceNumber: "INV-0011",
-      invoiceId: "inv-11",
-      paymentDate: "2025-05-28T14:15:00",
-      amount: 40000,
-      method: "M-Pesa",
-      status: "paid",
-      reference: "MPESA7X89YZ",
-    },
-    {
-      id: "3",
-      paymentId: "PAY-00003",
-      customerName: "Brian Otieno",
-      customerEmail: "brian@gmail.com",
-      invoiceNumber: "INV-0010",
-      invoiceId: "inv-10",
-      paymentDate: "2025-05-25T09:45:00",
-      amount: 25600,
-      method: "Bank Transfer",
-      status: "pending",
-      reference: "-",
-    },
-    // Add more entries to match your design...
-  ];
-
-  const filtered = payments.filter((p) => {
-    const matchesSearch = 
-      p.customerName.toLowerCase().includes(search.toLowerCase()) ||
-      p.paymentId.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "all" || p.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  const { data, isLoading, isError, error, isFetching } = usePayments({
+    search: searchInput || undefined,
+    status: statusFilter,
+    page,
+    limit: PAGE_SIZE,
   });
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const { data: stats, isLoading: isStatsLoading, isError: isStatsError } = usePaymentStats();
+  const statsUnavailable = isStatsLoading || isStatsError;
+
+  const confirmPayment = useConfirmPayment();
+  const failPayment = useFailPayment();
+  const actioningId =
+    confirmPayment.isPending ? (confirmPayment.variables as string) :
+    failPayment.isPending ? (failPayment.variables as string) :
+    null;
+
+  const payments = data ?? [];
+  const totalPages = page + (payments.length === PAGE_SIZE ? 1 : 0);
+
+  const totalRecorded =
+    (stats?.pendingAmount ?? 0) + (stats?.confirmedAmount ?? 0) + (stats?.failedAmount ?? 0);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
-      <div className="flex justify-between items-start mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
-          <p className="text-sm text-gray-500 mt-1">Track and manage payments received from your customers</p>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-6">
+        <div className="flex items-start gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm">
+            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <path d="M3 10h18" />
+              <path d="M7 15h3" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
+            <p className="text-sm text-gray-500 mt-1">Track and manage payments received from your customers</p>
+          </div>
         </div>
         <Link
           to="/dashboard/payments/new"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
         >
-          + Record Payment
+          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" viewBox="0 0 24 24">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Record Payment
         </Link>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Total Payments" value="KES 245,600.00" iconBg="#ECFDF5" icon={<div className="text-2xl">💰</div>} />
-        <StatCard label="Paid This Month" value="KES 120,000.00" iconBg="#EFF6FF" icon={<div className="text-2xl">✅</div>} />
-        <StatCard label="Pending Payments" value="KES 125,600.00" iconBg="#FEF3C7" icon={<div className="text-2xl">⏳</div>} />
-        <StatCard label="Overdue Payments" value="KES 15,600.00" iconBg="#FEE2E2" icon={<div className="text-2xl">⚠️</div>} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
+        <StatCard
+          label="Total Recorded"
+          value={statsUnavailable ? "—" : formatKES(totalRecorded)}
+          iconBg="#EFF6FF"
+          icon={
+            <svg width="20" height="20" fill="none" stroke="#2563EB" strokeWidth="1.8" viewBox="0 0 24 24">
+              <line x1="12" y1="1" x2="12" y2="23" />
+              <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+            </svg>
+          }
+        />
+        <StatCard
+          label="Confirmed"
+          value={statsUnavailable ? "—" : formatKES(stats?.confirmedAmount ?? 0)}
+          iconBg="#ECFDF5"
+          icon={
+            <svg width="20" height="20" fill="none" stroke="#059669" strokeWidth="1.8" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="8 12 11 15 16 9" />
+            </svg>
+          }
+        />
+        <StatCard
+          label="Pending"
+          value={statsUnavailable ? "—" : formatKES(stats?.pendingAmount ?? 0)}
+          iconBg="#FEF3C7"
+          icon={
+            <svg width="20" height="20" fill="none" stroke="#D97706" strokeWidth="1.8" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          }
+        />
+        <StatCard
+          label="Failed"
+          value={statsUnavailable ? "—" : formatKES(stats?.failedAmount ?? 0)}
+          iconBg="#FEE2E2"
+          icon={
+            <svg width="20" height="20" fill="none" stroke="#DC2626" strokeWidth="1.8" viewBox="0 0 24 24">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          }
+        />
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <input
-          type="text"
-          placeholder="Search payments by customer, invoice or reference..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500"
-        />
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="relative flex-1">
+          <svg
+            width="15"
+            height="15"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            viewBox="0 0 24 24"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search payments by customer, invoice or reference..."
+            value={searchInput}
+            onChange={(e) => { setSearchInput(e.target.value); setPage(1); }}
+            className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 bg-white rounded-xl outline-none text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+          />
+        </div>
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as any)}
-          className="px-4 py-3 border border-gray-200 rounded-2xl"
+          onChange={(e) => { setStatusFilter(e.target.value as PaymentStatus | "all"); setPage(1); }}
+          className="px-3 py-2.5 text-sm border border-gray-200 bg-white rounded-xl outline-none text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all sm:w-36"
         >
           <option value="all">All Status</option>
-          <option value="paid">Paid</option>
           <option value="pending">Pending</option>
-          <option value="overdue">Overdue</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="failed">Failed</option>
         </select>
-        <button className="px-6 py-3 border border-gray-200 rounded-2xl text-sm font-medium hover:bg-gray-50">Export</button>
+        <button className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 bg-white rounded-xl text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors">
+          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Export
+        </button>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              <th className="px-6 py-5 text-left">PAYMENT ID</th>
-              <th className="px-6 py-5 text-left">CUSTOMER</th>
-              <th className="px-6 py-5 text-left">INVOICE</th>
-              <th className="px-6 py-5 text-left">PAYMENT DATE</th>
-              <th className="px-6 py-5 text-left">AMOUNT</th>
-              <th className="px-6 py-5 text-left">METHOD</th>
-              <th className="px-6 py-5 text-left">STATUS</th>
-              <th className="px-6 py-5 text-left">REFERENCE</th>
-              <th className="w-12"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {paginated.map((p) => <PaymentRow key={p.id} payment={p} />)}
-          </tbody>
-        </table>
+      <div className="bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden">
+        {isLoading ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 text-left">
+                  <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Invoice</th>
+                  <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
+                  <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Payment Date</th>
+                  <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
+                  <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Method</th>
+                  <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                  <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Reference</th>
+                  <th className="w-12" />
+                </tr>
+              </thead>
+              <TableSkeleton />
+            </table>
+          </div>
+        ) : isError ? (
+          <InlineError message={getApiErrorMessage(error, "Couldn't load payments. Please try again.")} />
+        ) : payments.length === 0 ? (
+          <InlineEmpty hasFilters={Boolean(searchInput) || statusFilter !== "all"} />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 text-left">
+                  <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Invoice</th>
+                  <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
+                  <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Payment Date</th>
+                  <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
+                  <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Method</th>
+                  <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                  <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Reference</th>
+                  <th className="w-12" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {payments.map((p) => (
+                  <PaymentRow
+                    key={p.id}
+                    payment={p}
+                    onConfirm={(id) => confirmPayment.mutate(id)}
+                    onFail={(id) => failPayment.mutate(id)}
+                    actioningId={actioningId}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         <Pagination
           page={page}
           totalPages={totalPages}
-          total={filtered.length}
+          itemCount={payments.length}
           pageSize={PAGE_SIZE}
           isFetching={isFetching}
           onPageChange={setPage}

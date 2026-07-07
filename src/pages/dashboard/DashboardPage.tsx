@@ -1,7 +1,7 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useCustomerStats } from "../../hooks/useCustomers";
-import { useInvoices } from "../../hooks/useInvoices";
+import { useInvoices, useInvoiceStats } from "../../hooks/useInvoices";
 import { formatKES, formatDate } from "../../lib/format";
 
 interface StatCardProps {
@@ -69,10 +69,13 @@ function QuickAction({ label, description, icon, onClick, comingSoon }: QuickAct
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  // NOTE: invoice-level stats (revenue, outstanding, etc.) previously came
-  // from GET /invoices/stats, which doesn't exist on the backend yet —
-  // those cards below show placeholders until that endpoint is built.
   const { data: recentInvoices = [], isLoading: recentLoading, isError: recentError } = useInvoices({ status: "all", page: 1, limit: 4 });
+  // GET /invoices/dashboard only reports draft/pending/overdue counts plus
+  // amount_overdue/amount_receivables — there's no paid-revenue or
+  // sent-count field, so "Total Revenue" and "Invoices Sent" below stay as
+  // placeholders until the backend tracks those.
+  const { data: invoiceStats, isLoading: isInvoiceStatsLoading, isError: isInvoiceStatsError } = useInvoiceStats();
+  const invoiceStatsUnavailable = isInvoiceStatsLoading || isInvoiceStatsError;
 
   const firstName = user?.firstName ?? "there";
   const hour = new Date().getHours();
@@ -99,7 +102,7 @@ export default function DashboardPage() {
         <StatCard
           label="Total Revenue"
           value="—"
-          sub="Needs GET /invoices/stats"
+          sub="Not tracked by backend yet"
           accent="bg-blue-50"
           icon={
             <svg width="18" height="18" fill="none" stroke="#2563eb" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -110,8 +113,8 @@ export default function DashboardPage() {
         />
         <StatCard
           label="Outstanding"
-          value="—"
-          sub="Needs GET /invoices/stats"
+          value={invoiceStatsUnavailable ? "—" : formatKES(invoiceStats?.amount_receivables ?? 0)}
+          sub="Pending + overdue invoices"
           accent="bg-amber-50"
           icon={
             <svg width="18" height="18" fill="none" stroke="#d97706" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -123,7 +126,7 @@ export default function DashboardPage() {
         <StatCard
           label="Invoices Sent"
           value="—"
-          sub="Needs GET /invoices/stats"
+          sub="Not tracked by backend yet"
           accent="bg-green-50"
           icon={
             <svg width="18" height="18" fill="none" stroke="#16a34a" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -258,8 +261,10 @@ export default function DashboardPage() {
                       <td className="px-4 py-3 text-sm text-gray-700">
                         {[invoice.firstName, invoice.lastName].filter(Boolean).join(" ") || "—"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{formatDate(invoice.dueDate)}</td>
-                      <td className="px-4 py-3 text-sm font-semibold text-gray-900">{formatKES(invoice.invoiceTotal)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">
+                        {invoice.dueDate ? formatDate(invoice.dueDate) : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-900">{formatKES(invoice.invoiceTotal ?? 0)}</td>
                       <td className="px-4 py-3 text-sm uppercase text-gray-500">{invoice.status}</td>
                     </tr>
                   ))}

@@ -53,7 +53,9 @@ function TableSkeleton() {
         <tr key={i} className="animate-pulse">
           <td className="px-4 py-3.5 w-10"><div className="w-4 h-4 bg-gray-100 rounded" /></td>
           <td className="px-4 py-3.5"><div className="h-3.5 bg-gray-100 rounded w-16" /></td>
+          <td className="px-4 py-3.5"><div className="h-3.5 bg-gray-100 rounded w-14" /></td>
           <td className="px-4 py-3.5"><div className="h-3.5 bg-gray-100 rounded w-32" /></td>
+          <td className="px-4 py-3.5"><div className="h-3 bg-gray-100 rounded w-20" /></td>
           <td className="px-4 py-3.5"><div className="h-3 bg-gray-100 rounded w-20" /></td>
           <td className="px-4 py-3.5"><div className="h-3 bg-gray-100 rounded w-20" /></td>
           <td className="px-4 py-3.5"><div className="h-3 bg-gray-100 rounded w-20" /></td>
@@ -114,6 +116,12 @@ function InlineError({ message }: { message: string }) {
 
 // Invoice Row
 
+function getInvoiceRowKey(invoice: InvoiceListItem) {
+  const invoiceNo = invoice.invoiceNo != null ? String(invoice.invoiceNo) : "unknown";
+  const customerNo = invoice.customerNo != null ? String(invoice.customerNo) : "unknown";
+  return `${invoiceNo}-${customerNo}`;
+}
+
 function InvoiceRow({
   invoice,
   selected,
@@ -134,7 +142,7 @@ function InvoiceRow({
           className="w-4 h-4 accent-blue-600 rounded cursor-pointer"
         />
       </td>
-      <td className="px-4 py-3.5">
+      <td className="px-4 py-3.5 whitespace-nowrap">
         <Link
           to={`/dashboard/invoices/${invoice.invoiceNo}`}
           className="font-semibold text-blue-600 hover:text-blue-700 text-sm"
@@ -142,11 +150,13 @@ function InvoiceRow({
           INV-{invoice.invoiceNo}
         </Link>
       </td>
-      <td className="px-4 py-3.5 text-sm font-medium text-gray-900">{customerName}</td>
-      <td className="px-4 py-3.5 text-sm text-gray-500">{formatDate(invoice.createdAt)}</td>
-      <td className="px-4 py-3.5 text-sm text-gray-500">{formatDate(invoice.dueDate)}</td>
-      <td className="px-4 py-3.5 text-sm font-semibold text-gray-800">{formatKES(invoice.invoiceTotal)}</td>
-      <td className="px-4 py-3.5">
+      <td className="px-4 py-3.5 text-sm text-gray-500 whitespace-nowrap">{invoice.customerNo}</td>
+      <td className="px-4 py-3.5 text-sm font-medium text-gray-900 whitespace-nowrap">{customerName}</td>
+      <td className="px-4 py-3.5 text-sm text-gray-500 whitespace-nowrap">{invoice.createdAt ? formatDate(invoice.createdAt) : "—"}</td>
+      <td className="px-4 py-3.5 text-sm text-gray-500 whitespace-nowrap">{invoice.dueDate ? formatDate(invoice.dueDate) : "—"}</td>
+      <td className="px-4 py-3.5 text-sm font-semibold text-gray-800 whitespace-nowrap">{formatKES(invoice.invoiceTotal ?? 0)}</td>
+      <td className="px-4 py-3.5 text-sm text-gray-500 whitespace-nowrap">{formatKES(invoice.amountPaid ?? 0)}</td>
+      <td className="px-4 py-3.5 whitespace-nowrap">
         <StatusBadge status={invoice.status} />
       </td>
     </tr>
@@ -166,27 +176,47 @@ function BellIcon() {
 
 export default function InvoicesPage() {
   const [searchInput, setSearchInput] = useState("");
+  const [searchBy, setSearchBy] = useState<"firstName" | "lastName" | "customerNo" | "invoiceNo">("firstName");
   const [status, setStatus] = useState<InvoiceStatus | "all">("all");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<number>>(new Set());
 
   const search = useDebouncedValue(searchInput, 350);
+  const normalizedStatus = status === "all" ? undefined : status.toUpperCase();
+  const trimmedSearch = search.trim();
+  const numericSearch = Number(trimmedSearch);
+  const hasValidNumericSearch = trimmedSearch !== "" && Number.isFinite(numericSearch) && numericSearch > 0;
 
-  // NOTE: the backend's InvocesFilterDTO doesn't have a generic "search"
   const { data, isLoading, isError, error, isFetching } = useInvoices({
-    firstName: search || undefined,
-    status,
+    firstName: searchBy === "firstName" ? (trimmedSearch || undefined) : undefined,
+    lastName: searchBy === "lastName" ? (trimmedSearch || undefined) : undefined,
+    customerNo: searchBy === "customerNo" && hasValidNumericSearch ? numericSearch : undefined,
+    invoiceNo: searchBy === "invoiceNo" && hasValidNumericSearch ? numericSearch : undefined,
+    status: normalizedStatus,
     page,
     limit: PAGE_SIZE,
   });
 
-  // NOTE: GET /invoices/stats doesn't exist on the backend yet, so this will 404
   const { data: stats, isLoading: isStatsLoading, isError: isStatsError } = useInvoiceStats();
   const statsUnavailable = isStatsLoading || isStatsError;
 
-  const invoices = data ?? [];
+  const rawInvoices = Array.isArray(data) ? data : [];
+  const invoices = rawInvoices.filter((invoice): invoice is InvoiceListItem & { invoiceNo: number; customerNo: number } => {
+    const hasInvoiceNo = invoice.invoiceNo != null;
+    const hasCustomerNo = invoice.customerNo != null;
+    return hasInvoiceNo && hasCustomerNo;
+  });
   // Backend doesn't return a total count
   const totalPages = page + (invoices.length === PAGE_SIZE ? 1 : 0);
+
+  const searchPlaceholder =
+    searchBy === "firstName"
+      ? "Search by first name..."
+      : searchBy === "lastName"
+      ? "Search by last name..."
+      : searchBy === "customerNo"
+      ? "Search by customer number..."
+      : "Search by invoice number...";
 
   const handleSearchChange = (value: string) => {
     setSearchInput(value);
@@ -256,8 +286,8 @@ export default function InvoicesPage() {
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
         <StatCard
-          label="Total Invoiced"
-          value={statsUnavailable ? "—" : formatKES(stats?.totalInvoiced ?? 0)}
+          label="Total Receivables"
+          value={statsUnavailable ? "—" : formatKES(stats?.amount_receivables ?? 0)}
           iconBg="#EEF2FF"
           icon={
             <svg width="20" height="20" fill="none" stroke="#4F46E5" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -267,19 +297,8 @@ export default function InvoicesPage() {
           }
         />
         <StatCard
-          label="Paid Amount"
-          value={statsUnavailable ? "—" : formatKES(stats?.paidAmount ?? 0)}
-          iconBg="#F0FDF4"
-          icon={
-            <svg width="20" height="20" fill="none" stroke="#16A34A" strokeWidth="1.8" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="8 12 11 15 16 9" />
-            </svg>
-          }
-        />
-        <StatCard
-          label="Outstanding"
-          value={statsUnavailable ? "—" : formatKES(stats?.outstandingAmount ?? 0)}
+          label="Overdue Amount"
+          value={statsUnavailable ? "—" : formatKES(stats?.amount_overdue ?? 0)}
           iconBg="#FEF3C7"
           icon={
             <svg width="20" height="20" fill="none" stroke="#D97706" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -289,8 +308,19 @@ export default function InvoicesPage() {
           }
         />
         <StatCard
-          label="Draft Invoices"
-          value={statsUnavailable ? "—" : String(stats?.draftCount ?? 0)}
+          label="Pending Invoices"
+          value={statsUnavailable ? "—" : String(stats?.pending ?? 0)}
+          iconBg="#F0FDF4"
+          icon={
+            <svg width="20" height="20" fill="none" stroke="#16A34A" strokeWidth="1.8" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="8 12 11 15 16 9" />
+            </svg>
+          }
+        />
+        <StatCard
+          label="Total Drafts"
+          value={statsUnavailable ? "—" : String(stats?.draft ?? 0)}
           iconBg="#F3E8FF"
           icon={
             <svg width="20" height="20" fill="none" stroke="#9333EA" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -316,12 +346,27 @@ export default function InvoicesPage() {
             type="text"
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="Search by customer first name..."
+            placeholder={searchPlaceholder}
             className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 bg-white rounded-xl outline-none
               placeholder:text-gray-400 text-gray-900
               focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
           />
         </div>
+
+        <select
+          value={searchBy}
+          onChange={(e) => {
+            setSearchBy(e.target.value as "firstName" | "lastName" | "customerNo" | "invoiceNo");
+            setPage(1);
+          }}
+          className="px-3 py-2.5 text-sm border border-gray-200 bg-white rounded-xl outline-none text-gray-700
+            focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all sm:w-44"
+        >
+          <option value="firstName">First name</option>
+          <option value="lastName">Last name</option>
+          <option value="customerNo">Customer no</option>
+          <option value="invoiceNo">Invoice no</option>
+        </select>
 
         <select
           value={status}
@@ -334,7 +379,6 @@ export default function InvoicesPage() {
           <option value="PENDING">Pending</option>
           <option value="OVERDUE">Overdue</option>
           <option value="DRAFT">Draft</option>
-          <option value="SENT">Sent</option>
         </select>
 
         <div className="flex gap-2">
@@ -360,11 +404,13 @@ export default function InvoicesPage() {
               <thead>
                 <tr className="border-b border-gray-100 text-left">
                   <th className="px-4 py-3 w-10" />
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Invoice #</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Invoice #</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Customer No</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Created</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Due Date</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Amount Paid</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                 </tr>
               </thead>
@@ -389,18 +435,20 @@ export default function InvoicesPage() {
                         className="w-4 h-4 accent-blue-600 rounded cursor-pointer"
                       />
                     </th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Invoice #</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Invoice #</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Customer No</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Created</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Due Date</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Amount Paid</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {invoices.map((invoice) => (
                     <InvoiceRow
-                      key={invoice.invoiceNo}
+                      key={getInvoiceRowKey(invoice)}
                       invoice={invoice}
                       selected={selected.has(invoice.invoiceNo)}
                       onToggle={() => toggleOne(invoice.invoiceNo)}

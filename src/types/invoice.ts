@@ -2,15 +2,15 @@ export type InvoiceStatus = string;
 
 
 export interface InvoiceListItem {
-  firstName: string;
-  lastName: string;
-  customerNo: number;
-  invoiceNo: number;
+  firstName?: string | null;
+  lastName?: string | null;
+  customerNo?: number | null;
+  invoiceNo?: number | null;
   status: InvoiceStatus;
-  dueDate: string; 
-  createdAt: string; 
-  amountPaid: number;
-  invoiceTotal: number;
+  dueDate?: string | null;
+  createdAt?: string | null;
+  amountPaid?: number | null;
+  invoiceTotal?: number | null;
 }
 
 export interface CreateInvoiceRequest {
@@ -33,6 +33,17 @@ export interface InvoiceItemResult {
   tax: number;
   tax_total: number;
   total: number;
+}
+
+export interface InvoiceDetail {
+  invoiceNo: number;
+  status: InvoiceStatus;
+  dueDate?: string | null;
+  total_tax: number;
+  total: number;
+  amount_paid: number;
+  balance: number;
+  items: InvoiceItemResult[];
 }
 
 export interface InvoiceCreateResponse {
@@ -58,9 +69,24 @@ export interface InvoicesFilterParams {
   limit?: number;
 }
 
+export interface InvoiceListParams {
+  search?: string;
+  status?: InvoiceStatus | "all";
+  page?: number;
+  limit?: number;
+}
+
+export interface InvoiceListResponse {
+  data: InvoiceListItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface InvoiceStats {
-  totalInvoiced: number;
-  paidAmount: number;
-  outstandingAmount: number;
-  draftCount: number;
+  draft: number;
+  pending: number;
+  overdue: number;
+  amount_overdue: number;
+  amount_receivables: number;
 }
