@@ -19,6 +19,14 @@ export function usePaymentStats() {
   });
 }
 
+export function usePaymentDetail(paymentNo: number) {
+  return useQuery({
+    queryKey: [PAYMENTS_KEY, "detail", paymentNo],
+    queryFn: () => paymentsApi.detail(paymentNo),
+    enabled: Number.isFinite(paymentNo) && paymentNo > 0,
+  });
+}
+
 export function useCreatePayment() {
   const queryClient = useQueryClient();
 
@@ -32,7 +40,7 @@ export function useCreatePayment() {
   });
 }
 
-function useUpdatePaymentStatus(mutationFn: (id: string) => ReturnType<typeof paymentsApi.confirm>) {
+function useUpdatePaymentStatus(mutationFn: (paymentNo: number) => ReturnType<typeof paymentsApi.confirm>) {
   const queryClient = useQueryClient();
 
   return useMutation({

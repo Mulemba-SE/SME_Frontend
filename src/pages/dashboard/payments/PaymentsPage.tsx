@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { usePayments, usePaymentStats, useConfirmPayment, useFailPayment } from "../../../hooks/usePayments";
+import { usePayments, usePaymentStats } from "../../../hooks/usePayments";
 import { getApiErrorMessage } from "../../../api/auth";
 import { StatCard } from "../../../components/ui/StatCard";
 import { Pagination } from "../../../components/ui/Pagination";
@@ -75,7 +75,6 @@ function TableSkeleton() {
           <td className="px-4 py-3.5 sm:px-6"><div className="h-3 bg-gray-100 rounded w-24" /></td>
           <td className="px-4 py-3.5 sm:px-6"><div className="h-3 bg-gray-100 rounded w-20" /></td>
           <td className="px-4 py-3.5 sm:px-6"><div className="h-3 bg-gray-100 rounded w-24" /></td>
-          <td className="px-4 py-3.5 sm:px-6"><div className="h-5 bg-gray-100 rounded-full w-16" /></td>
         </tr>
       ))}
     </tbody>
@@ -98,25 +97,18 @@ function InlineError({ message }: { message: string }) {
   );
 }
 
-function PaymentRow({
-  payment,
-}: {
-  payment: PaymentListItem;
-  onConfirm: (id: string) => void;
-  onFail: (id: string) => void;
-  actioningId: string | null;
-}) {
+function PaymentRow({ payment }: { payment: PaymentListItem }) {
   const customerLabel = payment.customerNo ? `${payment.customerNo}` : "—";
 
   return (
     <tr className="hover:bg-gray-50/80 transition-colors">
       <td className="px-4 py-3.5 sm:px-6 whitespace-nowrap">
-        <Link to={`/dashboard/invoices/${payment.invoiceNo}`} className="flex items-center gap-3">
-          
-          <div>
-            <span className="font-semibold text-gray-900 block">INV-{payment.invoiceNo}</span>
-          </div>
+        <Link to={`/dashboard/payments/${payment.paymentNo}`} className="font-semibold text-blue-600 hover:text-blue-700">
+          PAY-{String(payment.paymentNo).padStart(6, "0")}
         </Link>
+      </td>
+      <td className="px-4 py-3.5 sm:px-6 whitespace-nowrap text-sm text-gray-600">
+        INV-{payment.invoiceNo}
       </td>
       <td className="px-4 py-3.5 sm:px-6">
         <div>
@@ -129,7 +121,6 @@ function PaymentRow({
       <td className="px-4 py-3.5 sm:px-6"><MethodBadge method={payment.paymentMethod} /></td>
       <td className="px-4 py-3.5 sm:px-6"><StatusBadge status={payment.status} /></td>
       <td className="px-4 py-3.5 sm:px-6 text-sm text-gray-600 font-mono">{payment.transactionRef || "-"}</td>
-      
     </tr>
   );
 }
@@ -148,13 +139,6 @@ export default function PaymentsPage() {
 
   const { data: stats, isLoading: isStatsLoading, isError: isStatsError } = usePaymentStats();
   const statsUnavailable = isStatsLoading || isStatsError;
-
-  const confirmPayment = useConfirmPayment();
-  const failPayment = useFailPayment();
-  const actioningId =
-    confirmPayment.isPending ? (confirmPayment.variables as string) :
-    failPayment.isPending ? (failPayment.variables as string) :
-    null;
 
   const payments = data ?? [];
   const totalPages = page + (payments.length === PAGE_SIZE ? 1 : 0);
@@ -286,6 +270,8 @@ export default function PaymentsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-left">
+                  <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Payment No</th>
+
                   <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Invoice</th>
                   <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
                   <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Payment Date</th>
@@ -293,7 +279,6 @@ export default function PaymentsPage() {
                   <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Method</th>
                   <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                   <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Reference</th>
-                  <th className="w-12" />
                 </tr>
               </thead>
               <TableSkeleton />
@@ -308,6 +293,8 @@ export default function PaymentsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-left">
+                  <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Payment No</th>
+
                   <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Invoice</th>
                   <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
                   <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Payment Date</th>
@@ -315,20 +302,13 @@ export default function PaymentsPage() {
                   <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Method</th>
                   <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                   <th className="px-4 py-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Reference</th>
-                  <th className="w-12" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {payments.map((p) => (
-                  <PaymentRow
-                    key={p.id}
-                    payment={p}
-                    onConfirm={(id) => confirmPayment.mutate(id)}
-                    onFail={(id) => failPayment.mutate(id)}
-                    actioningId={actioningId}
-                  />
-                ))}
-              </tbody>
+              {payments.map((p) => (
+                <PaymentRow key={p.id} payment={p} />
+              ))}
+            </tbody>
             </table>
           </div>
         )}

@@ -2,6 +2,7 @@ export type PaymentStatus = "pending" | "confirmed" | "failed";
 
 export interface PaymentListItem {
   id: string;
+  paymentNo: number;
   customerNo: number;
   invoiceNo: number;
   amount: number;
@@ -49,4 +50,32 @@ export interface CreatePaymentResponse {
   notes?: string | null;
   status: PaymentStatus;
   paymentAt: string;
+}
+
+export interface PaymentDetail {
+  paymentNo: number;
+  customerNo: number;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phoneNumber?: string | null;
+  invoiceNo: number;
+  invoiceStatus: string;
+  invoiceCreatedAt?: string | null;
+  invoiceDueDate?: string | null;
+  invoiceTotal: number;
+  invoiceBalance: number;
+  amount: number;
+  paymentMethod: string;
+  transactionRef: string;
+  notes?: string | null;
+  status: PaymentStatus;
+  paymentAt: string;
+  createdAt?: string | null;
+  confirmedAt?: string | null;
+  confirmedByFirstName?: string | null;
+  confirmedByLastName?: string | null;
+  failedAt?: string | null;
+  failedByFirstName?: string | null;
+  failedByLastName?: string | null;
 }

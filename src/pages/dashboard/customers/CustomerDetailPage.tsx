@@ -58,8 +58,8 @@ function StatusBadge({ status }: { status: string }) {
     bg: "bg-gray-100 border-gray-200", text: "text-gray-500", dot: "bg-gray-400", label: status,
   };
   return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border ${s.bg} ${s.text}`}>
-      <span className={`w-2 h-2 rounded-full ${s.dot}`} />
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${s.bg} ${s.text}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
       {s.label}
     </span>
   );
@@ -266,7 +266,7 @@ export default function CustomerDetailPage() {
 
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Last Invoice Date</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Due Invoice Date</p>
               <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
                 <svg width="18" height="18" fill="none" stroke="#d97706" strokeWidth="1.8" viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" />

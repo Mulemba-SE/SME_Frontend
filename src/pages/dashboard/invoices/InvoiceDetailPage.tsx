@@ -16,7 +16,7 @@ const STATUS_STYLES: Record<InvoiceStatus, { bg: string; text: string; dot: stri
   paid: { bg: "bg-green-50 border-green-100", text: "text-green-700", dot: "bg-green-500", label: "Paid" },
 };
 
-function StatusBadge({ status, size = "md" }: { status: string; size?: "xs" | "sm" | "md" }) {
+function StatusBadge({ status, size = "sm" }: { status: string; size?: "xs" | "sm" | "md" }) {
   const s = STATUS_STYLES[status.toLowerCase() as InvoiceStatus] ?? {
     bg: "bg-gray-100 border-gray-200",
     text: "text-gray-500",
@@ -24,8 +24,8 @@ function StatusBadge({ status, size = "md" }: { status: string; size?: "xs" | "s
     label: status,
   };
   const sizeClasses =
-    size === "xs" ? "gap-1 px-1.5 py-0.5 text-[10px]" : size === "sm" ? "gap-1 px-2 py-0.5 text-xs" : "gap-1.5 px-3 py-1.5 text-sm";
-  const dotSize = size === "xs" ? "w-1 h-1" : size === "sm" ? "w-1.5 h-1.5" : "w-2 h-2";
+    size === "xs" ? "gap-1 px-1.5 py-0.5 text-[10px]" : size === "sm" ? "gap-1 px-2 py-0.5 text-xs" : "gap-1 px-2 py-0.5 text-xs";
+  const dotSize = size === "xs" ? "w-1 h-1" : size === "sm" ? "w-1.5 h-1.5" : "w-1.5 h-1.5";
   return (
     <span className={`inline-flex items-center rounded-full font-semibold border ${sizeClasses} ${s.bg} ${s.text}`}>
       <span className={`rounded-full ${dotSize} ${s.dot}`} />

@@ -22,6 +22,7 @@ export const API = {
   PAYMENTS: {
   LIST: "/payments",
   STATS: "/payments/dashboard",
+  DETAIL: "/payments/detailed-payment",
 },
 
 } as const;

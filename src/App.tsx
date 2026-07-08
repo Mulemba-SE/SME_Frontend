@@ -10,6 +10,8 @@ import InvoiceDetailPage from './pages/dashboard/invoices/InvoiceDetailPage'
 import NewInvoicePage from './pages/dashboard/invoices/NewInvoicePage'
 import PaymentsPage from './pages/dashboard/payments/PaymentsPage'
 import NewPaymentPage from './pages/dashboard/payments/NewPaymentPage'
+import PaymentDetailPage from './pages/dashboard/payments/PaymentDetailPage'
+
 import DashboardLayout from './components/layout/DashboardLayout'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import { useEffect, useState } from 'react'
@@ -59,10 +61,10 @@ function AppRoutes() {
         <Route path="invoices/:id" element={<InvoiceDetailPage />} />
         <Route path="payments" element={<PaymentsPage />} />
         <Route path="payments/new" element={<NewPaymentPage />} />
+        <Route path="payments/:paymentNo" element={<PaymentDetailPage />} />
         <Route path="reports" element={<ComingSoon title="Reports" />} />
       </Route>
 
-      {/* Catch-all */}
       <Route path="*" element={<Navigate to="/auth" replace />} />
     </Routes>
   )
