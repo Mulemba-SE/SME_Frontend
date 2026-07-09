@@ -3,9 +3,11 @@ import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { invoicesApi } from "../../../api/invoices";
 import { getApiErrorMessage } from "../../../api/auth";
+import { usePayments } from "../../../hooks/usePayments";
 import { StatCard } from "../../../components/ui/StatCard";
 import { formatKES, formatDate } from "../../../lib/format";
 import type { InvoiceDetail, InvoiceListItem, InvoiceStatus } from "../../../types/invoice";
+import type { PaymentStatus } from "../../../types/payment";
 
 
 const STATUS_STYLES: Record<InvoiceStatus, { bg: string; text: string; dot: string; label: string }> = {
@@ -14,6 +16,12 @@ const STATUS_STYLES: Record<InvoiceStatus, { bg: string; text: string; dot: stri
   pending: { bg: "bg-amber-50 border-amber-100", text: "text-amber-700", dot: "bg-amber-500", label: "Pending" },
   overdue: { bg: "bg-red-50 border-red-100", text: "text-red-600", dot: "bg-red-400", label: "Overdue" },
   paid: { bg: "bg-green-50 border-green-100", text: "text-green-700", dot: "bg-green-500", label: "Paid" },
+};
+
+const PAYMENT_STATUS_STYLES: Record<PaymentStatus, { bg: string; text: string; dot: string; label: string }> = {
+  pending: { bg: "bg-amber-50 border-amber-100", text: "text-amber-700", dot: "bg-amber-500", label: "Pending" },
+  confirmed: { bg: "bg-green-50 border-green-100", text: "text-green-700", dot: "bg-green-500", label: "Confirmed" },
+  failed: { bg: "bg-red-50 border-red-100", text: "text-red-600", dot: "bg-red-400", label: "Failed" },
 };
 
 function StatusBadge({ status, size = "sm" }: { status: string; size?: "xs" | "sm" | "md" }) {
@@ -29,6 +37,16 @@ function StatusBadge({ status, size = "sm" }: { status: string; size?: "xs" | "s
   return (
     <span className={`inline-flex items-center rounded-full font-semibold border ${sizeClasses} ${s.bg} ${s.text}`}>
       <span className={`rounded-full ${dotSize} ${s.dot}`} />
+      {s.label}
+    </span>
+  );
+}
+
+function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
+  const s = PAYMENT_STATUS_STYLES[status];
+  return (
+    <span className={`inline-flex items-center rounded-full font-semibold border gap-1 px-2 py-0.5 text-xs ${s.bg} ${s.text}`}>
+      <span className={`rounded-full w-1.5 h-1.5 ${s.dot}`} />
       {s.label}
     </span>
   );
@@ -184,6 +202,12 @@ export default function InvoiceDetailPage() {
     today.setHours(0, 0, 0, 0);
     return Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   }, [invoice?.dueDate]);
+
+  const {
+    data: payments,
+    isLoading: isPaymentsLoading,
+    isError: isPaymentsError,
+  } = usePayments({ invoiceNo, page: 1, limit: 20 });
 
   if (isLoading) return <TableSkeleton />;
 
@@ -395,13 +419,46 @@ export default function InvoiceDetailPage() {
               </div>
             </div>
 
-            {/* ── Payment History (PLACEHOLDER: no GET /payments?invoiceNo=) ── */}
+            {/* ── Payment History (REAL: GET /payments?invoiceNo=) ── */}
             <div className="bg-white border border-gray-100 rounded-3xl shadow-sm p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Payment History</h2>
-              <EmptyState
-                title="No payments recorded yet"
-                message="There's no endpoint to fetch payments for a single invoice yet — PaymentController only supports creating a payment."
-              />
+              {isPaymentsLoading ? (
+                <div className="space-y-2 animate-pulse">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="h-20 rounded-xl bg-gray-100" />
+                  ))}
+                </div>
+              ) : isPaymentsError ? (
+                <p className="text-sm text-gray-400 py-6 text-center">Unable to load payment history.</p>
+              ) : payments && payments.length > 0 ? (
+                <div className="divide-y divide-gray-50">
+                  {payments.map((p) => (
+                    <div key={p.paymentNo} className="grid grid-cols-2 gap-x-4 gap-y-3 py-4 first:pt-0 last:pb-0">
+                      <div>
+                        <p className="text-xs text-gray-400 font-medium mb-0.5">Amount Paid</p>
+                        <p className="text-sm font-semibold text-gray-900">{formatKES(p.amount)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400 font-medium mb-0.5">Paid Date</p>
+                        <p className="text-sm font-medium text-gray-900">{formatDate(p.paymentAt)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400 font-medium mb-0.5">Reference</p>
+                        <p className="text-sm font-medium text-gray-900">{p.transactionRef || "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400 font-medium mb-0.5">Payment Status</p>
+                        <PaymentStatusBadge status={p.status} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  title="No payments recorded yet"
+                  message="Payments made against this invoice will appear here."
+                />
+              )}
             </div>
           </div>
 

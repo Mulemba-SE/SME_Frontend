@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useCustomers, useCustomerStats } from "../../../hooks/useCustomers";
 import { getApiErrorMessage } from "../../../api/auth";
 import { StatCard } from "../../../components/ui/StatCard";
@@ -165,15 +165,11 @@ function CustomerRow({
   selected: boolean;
   onToggle: () => void;
 }) {
-  const navigate = useNavigate();
   const { totalDue } = deriveRow(customer);
   const customerName = [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email || "Customer";
 
   return (
-    <tr
-      className="hover:bg-gray-50/70 transition-colors group cursor-pointer"
-      onClick={() => navigate(`/dashboard/customers/${customer.userNo}`)}
-    >
+    <tr className="hover:bg-gray-50/70 transition-colors group">
       <td className="px-4 py-3.5 w-10" onClick={(e) => e.stopPropagation()}>
         <input
           type="checkbox"
@@ -186,7 +182,12 @@ function CustomerRow({
         <div className="flex items-center gap-3">
           <Avatar name={customerName} />
           <div>
-            <span className="font-semibold text-gray-900 text-sm block">{customer.userNo || "—"}</span>
+            <Link
+              to={`/dashboard/customers/${customer.userNo}`}
+              className="font-semibold text-blue-600 hover:text-blue-700 text-sm block"
+            >
+              {customer.userNo || "—"}
+            </Link>
           </div>
         </div>
       </td>

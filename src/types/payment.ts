@@ -1,12 +1,14 @@
 export type PaymentStatus = "pending" | "confirmed" | "failed";
 
+export type PaymentMethod = "BANK" | "CASH" | "M_PESA";
+
 export interface PaymentListItem {
   id: string;
   paymentNo: number;
   customerNo: number;
   invoiceNo: number;
   amount: number;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod;
   transactionRef: string;
   notes?: string | null;
   paymentAt: string;
@@ -16,6 +18,9 @@ export interface PaymentListItem {
 export interface PaymentsFilterParams {
   search?: string;
   status?: PaymentStatus | "all";
+  paymentNo?: number;
+  customerNo?: number;
+  invoiceNo?: number;
   page?: number;
   limit?: number;
 }
@@ -28,8 +33,6 @@ export interface PaymentStats {
   failedCount: number;
   failedAmount: number;
 }
-
-export type PaymentMethod = "BANK" | "CASH" | "M_PESA";
 
 export interface CreatePaymentRequest {
   customerNo: number;
@@ -46,7 +49,7 @@ export interface CreatePaymentResponse {
   invoiceNo: number;
   amount: number;
   transactionRef: string;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod;
   notes?: string | null;
   status: PaymentStatus;
   paymentAt: string;
@@ -66,7 +69,7 @@ export interface PaymentDetail {
   invoiceTotal: number;
   invoiceBalance: number;
   amount: number;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod;
   transactionRef: string;
   notes?: string | null;
   status: PaymentStatus;

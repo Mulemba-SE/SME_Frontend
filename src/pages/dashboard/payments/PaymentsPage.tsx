@@ -125,13 +125,20 @@ function PaymentRow({ payment }: { payment: PaymentListItem }) {
   );
 }
 
-export default function PaymentsPage() {
+  export default function PaymentsPage() {
   const [searchInput, setSearchInput] = useState("");
+  const [searchBy, setSearchBy] = useState<"paymentNo" | "invoiceNo" | "customerNo">("paymentNo");
   const [statusFilter, setStatusFilter] = useState<PaymentStatus | "all">("all");
   const [page, setPage] = useState(1);
 
+  const trimmedSearch = searchInput.trim();
+  const numericSearch = Number(trimmedSearch);
+  const hasValidNumericSearch = trimmedSearch !== "" && Number.isFinite(numericSearch) && numericSearch > 0;
+
   const { data, isLoading, isError, error, isFetching } = usePayments({
-    search: searchInput || undefined,
+    paymentNo: searchBy === "paymentNo" && hasValidNumericSearch ? numericSearch : undefined,
+    invoiceNo: searchBy === "invoiceNo" && hasValidNumericSearch ? numericSearch : undefined,
+    customerNo: searchBy === "customerNo" && hasValidNumericSearch ? numericSearch : undefined,
     status: statusFilter,
     page,
     limit: PAGE_SIZE,
@@ -222,47 +229,54 @@ export default function PaymentsPage() {
         />
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <div className="relative flex-1">
-          <svg
-            width="15"
-            height="15"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            viewBox="0 0 24 24"
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-          >
-            <circle cx="11" cy="11" r="7" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search payments by customer, invoice or reference..."
-            value={searchInput}
-            onChange={(e) => { setSearchInput(e.target.value); setPage(1); }}
-            className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 bg-white rounded-xl outline-none text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
-          />
-        </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value as PaymentStatus | "all"); setPage(1); }}
-          className="px-3 py-2.5 text-sm border border-gray-200 bg-white rounded-xl outline-none text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all sm:w-36"
-        >
-          <option value="all">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="failed">Failed</option>
-        </select>
-        <button className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 bg-white rounded-xl text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors">
-          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
-          Export
-        </button>
-      </div>
+<div className="flex flex-col sm:flex-row gap-3 mb-4">
+  <div className="relative flex-1">
+    <svg
+      width="15"
+      height="15"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      viewBox="0 0 24 24"
+      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+    <input
+      type="text"
+      placeholder={
+        searchBy === "paymentNo" ? "Search by payment number..." :
+        searchBy === "invoiceNo" ? "Search by invoice number..." :
+        "Search by customer number..."
+      }
+      value={searchInput}
+      onChange={(e) => { setSearchInput(e.target.value); setPage(1); }}
+      className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 bg-white rounded-xl outline-none text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+    />
+  </div>
+
+  <select
+    value={searchBy}
+    onChange={(e) => { setSearchBy(e.target.value as "paymentNo" | "invoiceNo" | "customerNo"); setPage(1); }}
+    className="px-3 py-2.5 text-sm border border-gray-200 bg-white rounded-xl outline-none text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all sm:w-44"
+  >
+    <option value="paymentNo">Payment no</option>
+    <option value="invoiceNo">Invoice no</option>
+    <option value="customerNo">Customer no</option>
+  </select>
+
+  <select
+    value={statusFilter}
+    onChange={(e) => { setStatusFilter(e.target.value as PaymentStatus | "all"); setPage(1); }}
+    className="px-3 py-2.5 text-sm border border-gray-200 bg-white rounded-xl outline-none text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all sm:w-36"
+  >
+    <option value="all">All Status</option>
+    <option value="pending">Pending</option>
+    <option value="confirmed">Confirmed</option>
+    <option value="failed">Failed</option>
+  </select>
+</div>
 
       <div className="bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden">
         {isLoading ? (
@@ -287,8 +301,8 @@ export default function PaymentsPage() {
         ) : isError ? (
           <InlineError message={getApiErrorMessage(error, "Couldn't load payments. Please try again.")} />
         ) : payments.length === 0 ? (
-          <InlineEmpty hasFilters={Boolean(searchInput) || statusFilter !== "all"} />
-        ) : (
+        <InlineEmpty hasFilters={Boolean(searchInput) || statusFilter !== "all"} />
+      ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
