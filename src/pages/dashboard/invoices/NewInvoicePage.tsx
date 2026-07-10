@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate, Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { InputField } from "../../../components/ui/InputField";
 import { invoicesApi } from "../../../api/invoices";
 import { getApiErrorMessage, getApiFieldErrors } from "../../../api/auth";
 import { formatKES } from "../../../lib/format";
 import type { CreateInvoiceRequest, InvoiceCreateResponse } from "../../../types/invoice";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 
 // Types
 interface LineItem {
@@ -269,8 +269,14 @@ function LineItemsTable({
 export default function NewInvoicePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
 
-  const [form, setForm] = useState<FormState>(initialForm);
+  const prefilledCustomerNo = searchParams.get("customerNo") ?? "";
+
+  const [form, setForm] = useState<FormState>({
+    ...initialForm,
+    customerNo: prefilledCustomerNo,
+  });
   const [lineItems, setLineItems] = useState<LineItem[]>(initialLineItems);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -280,8 +286,6 @@ export default function NewInvoicePage() {
   const createInvoice = useMutation<InvoiceCreateResponse, unknown, void>({
     mutationFn: () => {
       const payload: CreateInvoiceRequest = {
-        // Backend's InvoiceDTO.customerNo is a Long — this is the customer's
-        // user_no (e.g. 100003), not their UUID id.
         customerNo: Number(form.customerNo.trim()),
         dueDate: form.dueDate,
         items: lineItems

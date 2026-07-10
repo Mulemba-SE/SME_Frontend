@@ -39,6 +39,18 @@ export default defineConfig({
           })
         },
       },
+      '/reports': {
+  target: 'http://localhost:8081',
+  changeOrigin: true,
+  configure: (proxy) => {
+    proxy.on('proxyReq', (_proxyReq, req) => {
+      console.log('[proxy] forwarding ->', req.method, req.url)
+    })
+    proxy.on('error', (err, req) => {
+      console.log('[proxy] ERROR on', req.url, err.message)
+    })
+  },
+},
     },
   },
 })

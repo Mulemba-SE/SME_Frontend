@@ -209,12 +209,32 @@ export default function CustomerDetailPage() {
               </div>
             </div>
             <div>
-              <Link
-                to="/dashboard/customers"
-                className="inline-flex items-center gap-2 px-4 py-2 border border-transparent bg-white text-blue-600 text-sm font-medium rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
-              >
-                ← Back
-              </Link>
+              <div className="flex flex-col items-end gap-2">
+  <Link
+    to={`/dashboard/invoices/new?customerNo=${customer.userNo}`}
+    aria-label="Create invoice"
+    title="Create invoice"
+    className="inline-flex h-9 w-11 shrink-0 items-center justify-center rounded-lg border border-white/30 bg-white/10 text-white transition-colors hover:bg-white/20"
+  >
+    <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="12" y1="12" x2="12" y2="18" />
+      <line x1="9" y1="15" x2="15" y2="15" />
+    </svg>
+  </Link>
+  <Link
+    to="/dashboard/customers"
+    className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 text-sm font-medium text-white transition-colors hover:bg-white/20"
+  >
+    <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24">
+      <path d="M19 12H5" />
+      <path d="m12 19-7-7 7-7" />
+    </svg>
+    Back
+  </Link>
+</div>
+ 
             </div>
           </div>
         </div>
