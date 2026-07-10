@@ -11,6 +11,7 @@ import NewInvoicePage from './pages/dashboard/invoices/NewInvoicePage'
 import PaymentsPage from './pages/dashboard/payments/PaymentsPage'
 import NewPaymentPage from './pages/dashboard/payments/NewPaymentPage'
 import PaymentDetailPage from './pages/dashboard/payments/PaymentDetailPage'
+import ReportsPage from './pages/dashboard/ReportsPage'
 
 import DashboardLayout from './components/layout/DashboardLayout'
 import ProtectedRoute from './components/layout/ProtectedRoute'
@@ -62,7 +63,7 @@ function AppRoutes() {
         <Route path="payments" element={<PaymentsPage />} />
         <Route path="payments/new" element={<NewPaymentPage />} />
         <Route path="payments/:paymentNo" element={<PaymentDetailPage />} />
-        <Route path="reports" element={<ComingSoon title="Reports" />} />
+        <Route path="reports" element={<ReportsPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/auth" replace />} />
@@ -77,20 +78,5 @@ export default function App() {
         <AppRoutes />
       </BrowserRouter>
     </QueryClientProvider>
-  )
-}
-
-function ComingSoon({ title }: { title: string }) {
-  return (
-    <div className="p-8 flex flex-col items-center justify-center min-h-[60vh] text-center">
-      <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-4">
-        <svg width="22" height="22" fill="none" stroke="#2563eb" strokeWidth="1.8" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-      </div>
-      <p className="text-base font-semibold text-gray-900 mb-1">{title}</p>
-      <p className="text-sm text-gray-400 max-w-xs">This section is under construction.</p>
-    </div>
   )
 }
