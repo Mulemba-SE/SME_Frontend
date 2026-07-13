@@ -25,7 +25,7 @@ const METHOD_LABELS: Record<string, string> = {
 const METHOD_COLORS: Record<string, string> = {
   M_PESA: "#2563eb",
   BANK_TRANSFER: "#16a34a",
-  CASH: "#d97706",
+  CASH: "#f28305",
 };
 
 function methodLabel(method: string) {
@@ -33,7 +33,7 @@ function methodLabel(method: string) {
 }
 
 function methodColor(method: string) {
-  return METHOD_COLORS[method] ?? "#9333ea";
+  return METHOD_COLORS[method] ?? "#07f717";
 }
 
 function todayISO(): string {
@@ -294,7 +294,9 @@ export default function ReportsPage() {
                       <Cell key={entry.method} fill={methodColor(entry.method)} />
                     ))}
                   </Pie>
-                <Tooltip formatter={(value) => formatKES(Number(value))} />                </PieChart>
+                <Tooltip formatter={(value) => formatKES(Number(value))} />                
+
+                </PieChart>
               </ResponsiveContainer>
               <div className="space-y-3 mt-2">
                 {(methodData ?? []).map((m) => (
