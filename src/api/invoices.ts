@@ -104,6 +104,8 @@ export const invoicesApi = {
       status: params.status === "all" ? undefined : params.status,
       dueDateFrom: params.dueDateFrom,
       dueDateTo: params.dueDateTo,
+      sortBy: params.sortBy,
+      sortDirection: params.sortDirection,
       page: apiPage,
       size: params.limit,
     };

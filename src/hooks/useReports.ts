@@ -35,3 +35,10 @@ export function useTopCustomers(params: ReportsFilterParams, limit = 5) {
     placeholderData: (previous) => previous,
   });
 }
+
+export function useOverdueSummary() {
+  return useQuery({
+    queryKey: [REPORTS_KEY, "overdue-summary"],
+    queryFn: () => reportsApi.overdueSummary(),
+  });
+}

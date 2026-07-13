@@ -2,6 +2,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useCustomerStats } from "../../hooks/useCustomers";
 import { useInvoices, useInvoiceStats } from "../../hooks/useInvoices";
+import { useReportsSummary, useOverdueSummary } from "../../hooks/useReports";
+import { InvoicesOverviewChart } from "../../components/layout/InvoicesOverviewChart";
 import { formatKES, formatDate } from "../../lib/format";
 
 interface StatCardProps {
@@ -22,7 +24,7 @@ function StatCard({ label, value, sub, icon, accent }: StatCardProps) {
         </div>
       </div>
       <div>
-        <p className="text-2xl font-semibold text-gray-900">{value}</p>
+        <p className="text-xl font-bold text-gray-900">{value}</p>
         <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
       </div>
     </div>
@@ -66,16 +68,47 @@ function QuickAction({ label, description, icon, onClick, comingSoon }: QuickAct
   );
 }
 
+const RECENT_ICON_PALETTE = [
+  { bg: "#EFF6FF", color: "#2563EB" },
+  { bg: "#FFF7ED", color: "#EA580C" },
+  { bg: "#F0FDF4", color: "#16A34A" },
+  { bg: "#F3E8FF", color: "#9333EA" },
+];
+
+const RECENT_STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  PAID: { bg: "bg-green-50", text: "text-green-700", label: "Paid" },
+  PENDING: { bg: "bg-blue-50", text: "text-blue-700", label: "Pending" },
+  SENT: { bg: "bg-blue-50", text: "text-blue-700", label: "Pending" },
+  OVERDUE: { bg: "bg-red-50", text: "text-red-600", label: "Overdue" },
+  DRAFT: { bg: "bg-gray-100", text: "text-gray-500", label: "Draft" },
+};
+
+function InvoiceDocIcon({ color }: { color: string }) {
+  return (
+    <svg width="16" height="16" fill="none" stroke={color} strokeWidth="1.8" viewBox="0 0 24 24">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+    </svg>
+  );
+}
+
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: recentInvoices = [], isLoading: recentLoading, isError: recentError } = useInvoices({ status: "all", page: 1, limit: 4 });
-  // GET /invoices/dashboard only reports draft/pending/overdue counts plus
-  // amount_overdue/amount_receivables — there's no paid-revenue or
-  // sent-count field, so "Total Revenue" and "Invoices Sent" below stay as
-  // placeholders until the backend tracks those.
+  const { data: recentInvoices = [], isLoading: recentLoading, isError: recentError } = useInvoices({ status: "all", page: 1, limit: 4, sortBy: "CREATE_DATE", sortDirection: "DESC" });
   const { data: invoiceStats, isLoading: isInvoiceStatsLoading, isError: isInvoiceStatsError } = useInvoiceStats();
   const invoiceStatsUnavailable = isInvoiceStatsLoading || isInvoiceStatsError;
+
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const thirtyDaysAgoISO = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  const { data: revenueSummary, isLoading: isRevenueLoading, isError: isRevenueError } = useReportsSummary({
+    from: thirtyDaysAgoISO,
+    to: todayISO,
+  });
+  const revenueUnavailable = isRevenueLoading || isRevenueError;
+
+  const { data: overdueSummary, isLoading: isOverdueLoading, isError: isOverdueError } = useOverdueSummary();
+  const overdueUnavailable = isOverdueLoading || isOverdueError;
 
   const firstName = user?.firstName ?? "there";
   const hour = new Date().getHours();
@@ -101,8 +134,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
           label="Total Revenue"
-          value="—"
-          sub="Not tracked by backend yet"
+          value={revenueUnavailable ? "—" : formatKES(revenueSummary?.totalRevenue ?? 0)}
+          sub="Last 30 days"
           accent="bg-blue-50"
           icon={
             <svg width="18" height="18" fill="none" stroke="#2563eb" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -124,14 +157,15 @@ export default function DashboardPage() {
           }
         />
         <StatCard
-          label="Invoices Sent"
-          value="—"
-          sub="Not tracked by backend yet"
-          accent="bg-green-50"
+          label="Overdue"
+          value={overdueUnavailable ? "—" : formatKES(overdueSummary?.overdueAmount ?? 0)}
+          sub="Needs attention"
+          accent="bg-red-50"
           icon={
-            <svg width="18" height="18" fill="none" stroke="#16a34a" strokeWidth="1.8" viewBox="0 0 24 24">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
+            <svg width="18" height="18" fill="none" stroke="#dc2626" strokeWidth="1.8" viewBox="0 0 24 24">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
           }
         />
@@ -149,6 +183,88 @@ export default function DashboardPage() {
           }
         />
       </div>
+
+     <div className="grid grid-cols-1 lg:grid-cols-13 gap-4 mb-8">
+      <div className="lg:col-span-8 h-full">
+        <InvoicesOverviewChart />
+      </div>
+      <div className="lg:col-span-5 h-full">
+        <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm h-full flex flex-col">
+          <div className="flex items-center justify-between gap-4 px-4 py-3.5 border-b border-gray-100">
+            <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wide">Recent invoices</h2>
+            <Link to="/dashboard/invoices" className="text-sm text-blue-600 hover:text-blue-700">
+              View all
+            </Link>
+          </div>
+            {recentLoading ? (
+              <div className="p-6 space-y-4">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="h-16 rounded-2xl bg-gray-100 animate-pulse" />
+                ))}
+              </div>
+            ) : recentError ? (
+              <div className="p-6 text-sm text-red-600">Unable to load recent invoices. Please refresh.</div>
+            ) : recentInvoices.length === 0 ? (
+              <div className="p-8 flex flex-col items-center justify-center text-center gap-3">
+                <p className="text-sm font-semibold text-gray-900">No invoices yet</p>
+                <p className="text-xs text-gray-500 max-w-xs">
+                  Create your first invoice to see it appear here.
+                </p>
+                <Link
+                  to="/dashboard/invoices/new"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
+                >
+                  + Create Invoice
+                </Link>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-50">
+                {recentInvoices.map((invoice, index) => {
+                  const palette = RECENT_ICON_PALETTE[index % RECENT_ICON_PALETTE.length];
+                  const statusStyle =
+                    RECENT_STATUS_STYLES[invoice.status?.toUpperCase()] ?? RECENT_STATUS_STYLES.DRAFT;
+                  const customerName = [invoice.firstName, invoice.lastName].filter(Boolean).join(" ") || "—";
+
+                  return (
+                    <div
+                      key={invoice.invoiceNo}
+                      className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50/70 transition-colors"
+                    >
+                      <div
+                        className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ background: palette.bg }}
+                      >
+                        <InvoiceDocIcon color={palette.color} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          to={`/dashboard/invoices/${invoice.invoiceNo}`}
+                          className="text-sm font-semibold text-blue-600 hover:text-blue-700 block"
+                        >
+                          INV-{invoice.invoiceNo}
+                        </Link>
+                        <p className="text-xs text-gray-500 truncate">{customerName}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {invoice.createdAt ? formatDate(invoice.createdAt) : "—"}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm font-semibold text-gray-900">{formatKES(invoice.invoiceTotal ?? 0)}</p>
+                        <span
+                          className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${statusStyle.bg} ${statusStyle.text}`}
+                        >
+                          {statusStyle.label}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
 
       {/* Quick actions */}
       <div className="mb-8">
@@ -207,73 +323,6 @@ export default function DashboardPage() {
           />
         </div>
       </div>
-
-      <div className="mb-8">
-        <div className="flex items-center justify-between gap-4 mb-3">
-          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Recent invoices</h2>
-          <Link to="/dashboard/invoices" className="text-sm text-blue-600 hover:text-blue-700">
-            View all invoices
-          </Link>
-        </div>
-
-        <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
-          {recentLoading ? (
-            <div className="p-6 space-y-4">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="h-16 rounded-2xl bg-gray-100 animate-pulse" />
-              ))}
-            </div>
-          ) : recentError ? (
-            <div className="p-6 text-sm text-red-600">Unable to load recent invoices. Please refresh.</div>
-          ) : recentInvoices.length === 0 ? (
-            <div className="p-12 flex flex-col items-center justify-center text-center gap-3">
-              <p className="text-sm font-semibold text-gray-900">No invoices yet</p>
-              <p className="text-sm text-gray-500 max-w-xs">
-                Create your first invoice to see it appear here with your invoice totals and payment status.
-              </p>
-              <Link
-                to="/dashboard/invoices/new"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
-              >
-                + Create Invoice
-              </Link>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 text-left">
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Invoice</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Due</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {recentInvoices.map((invoice) => (
-                    <tr key={invoice.invoiceNo} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 text-sm font-semibold text-blue-600">
-                        <Link to={`/dashboard/invoices/${invoice.invoiceNo}`} className="hover:underline">
-                          INV-{invoice.invoiceNo}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">
-                        {[invoice.firstName, invoice.lastName].filter(Boolean).join(" ") || "—"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
-                        {invoice.dueDate ? formatDate(invoice.dueDate) : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-semibold text-gray-900">{formatKES(invoice.invoiceTotal ?? 0)}</td>
-                      <td className="px-4 py-3 text-sm uppercase text-gray-500">{invoice.status}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+</div>
   );
 }

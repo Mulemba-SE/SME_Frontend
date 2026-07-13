@@ -5,6 +5,7 @@ import type {
   RevenuePoint,
   PaymentMethodBreakdown,
   TopCustomer,
+  OverdueSummary,
 } from "../types/report";
 
 const api = axios.create({
@@ -32,6 +33,13 @@ export const reportsApi = {
       params: { from: params.from, to: params.to },
     });
     return normalizeSummary(res.data ?? {});
+  },
+
+  overdueSummary: async (): Promise<OverdueSummary> => {
+    const res = await api.get<OverdueSummary>("/reports/overdue-summary");
+    return {
+      overdueAmount: Number(res.data?.overdueAmount ?? 0),
+    };
   },
 
   revenue: async (params: ReportsFilterParams): Promise<RevenuePoint[]> => {

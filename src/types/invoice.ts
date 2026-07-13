@@ -1,3 +1,6 @@
+export type InvoiceSortBy = "DUE_DATE" | "CREATE_DATE" | "INVOICE_NO" | "FIRST_NAME" | "LAST_NAME" | "TOTAL" | "STATUS";
+export type SortDirection = "ASC" | "DESC";
+
 export type InvoiceStatus = string;
 
 
@@ -65,6 +68,8 @@ export interface InvoicesFilterParams {
   status?: InvoiceStatus | "all";
   dueDateFrom?: string;
   dueDateTo?: string;
+  sortBy?: InvoiceSortBy;
+  sortDirection?: SortDirection;
   page?: number; 
   limit?: number;
 }

@@ -35,3 +35,7 @@ export interface TopCustomer {
   outstandingAmount: number;
   lastPaymentDate: string | null;
 }
+
+export interface OverdueSummary {
+  overdueAmount: number;
+}
