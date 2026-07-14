@@ -4,6 +4,8 @@ import { useCustomerStats } from "../../hooks/useCustomers";
 import { useInvoices, useInvoiceStats } from "../../hooks/useInvoices";
 import { useReportsSummary, useOverdueSummary } from "../../hooks/useReports";
 import { InvoicesOverviewChart } from "../../components/layout/InvoicesOverviewChart";
+import { TopCustomersCard } from "../../components/layout/TopCustomersCard";
+import { PaymentsOverviewCard } from "../../components/layout/PaymentsOverviewCard";
 import { formatKES, formatDate } from "../../lib/format";
 
 interface StatCardProps {
@@ -35,25 +37,24 @@ interface QuickActionProps {
   label: string;
   description: string;
   icon: React.ReactNode;
+  accent: string;
   onClick?: () => void;
   comingSoon?: boolean;
 }
 
-function QuickAction({ label, description, icon, onClick, comingSoon }: QuickActionProps) {
+function QuickAction({ label, description, icon, accent, onClick, comingSoon }: QuickActionProps) {
   return (
     <button
       onClick={onClick}
       disabled={comingSoon}
-      className={`flex items-start gap-4 p-4 rounded-xl border text-left transition-all w-full ${
-        comingSoon
-          ? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-60"
-          : "border-gray-200 bg-white hover:border-blue-200 hover:shadow-sm"
+      className={`flex items-start gap-3 p-3.5 rounded-xl text-left transition-all w-full h-full ${
+        comingSoon ? "bg-gray-50 cursor-not-allowed opacity-60" : `${accent} hover:shadow-sm`
       }`}
     >
-      <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+      <div className="w-9 h-9 rounded-lg bg-white/70 flex items-center justify-center flex-shrink-0">
         {icon}
       </div>
-      <div>
+      <div className="min-w-0">
         <div className="flex items-center gap-2">
           <p className="text-sm font-semibold text-gray-900">{label}</p>
           {comingSoon && (
@@ -184,18 +185,19 @@ export default function DashboardPage() {
         />
       </div>
 
-     <div className="grid grid-cols-1 lg:grid-cols-13 gap-4 mb-8">
-      <div className="lg:col-span-8 h-full">
-        <InvoicesOverviewChart />
-      </div>
-      <div className="lg:col-span-5 h-full">
-        <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm h-full flex flex-col">
-          <div className="flex items-center justify-between gap-4 px-4 py-3.5 border-b border-gray-100">
-            <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wide">Recent invoices</h2>
-            <Link to="/dashboard/invoices" className="text-sm text-blue-600 hover:text-blue-700">
-              View all
-            </Link>
-          </div>
+      {/* Row 1: Invoices Overview chart + Recent Invoices */}
+      <div className="grid grid-cols-1 lg:grid-cols-13 gap-4 mb-8">
+        <div className="lg:col-span-8 h-full">
+          <InvoicesOverviewChart />
+        </div>
+        <div className="lg:col-span-5 h-full">
+          <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm h-full flex flex-col">
+            <div className="flex items-center justify-between gap-4 px-4 py-3.5 border-b border-gray-100">
+              <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wide">Recent invoices</h2>
+              <Link to="/dashboard/invoices" className="text-sm text-blue-600 hover:text-blue-700">
+                View all
+              </Link>
+            </div>
             {recentLoading ? (
               <div className="p-6 space-y-4">
                 {Array.from({ length: 3 }).map((_, index) => (
@@ -265,64 +267,76 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Row 2: Payments Overview + Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+        <PaymentsOverviewCard />
 
-      {/* Quick actions */}
-      <div className="mb-8">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
-          Quick actions
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <QuickAction
-            label="Create an invoice"
-            description="Generate a professional invoice and send it to a customer."
-            onClick={() => navigate("/dashboard/invoices/new")}
-            icon={
-              <svg width="18" height="18" fill="none" stroke="#2563eb" strokeWidth="1.8" viewBox="0 0 24 24">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="12" y1="18" x2="12" y2="12" />
-                <line x1="9" y1="15" x2="15" y2="15" />
-              </svg>
-            }
-          />
-          <QuickAction
-            label="Add a customer"
-            description="Save a customer's details to use them across invoices."
-            onClick={() => navigate("/dashboard/customers/new")}
-            icon={
-              <svg width="18" height="18" fill="none" stroke="#2563eb" strokeWidth="1.8" viewBox="0 0 24 24">
-                <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                <circle cx="8.5" cy="7" r="4" />
-                <line x1="20" y1="8" x2="20" y2="14" />
-                <line x1="23" y1="11" x2="17" y2="11" />
-              </svg>
-            }
-          />
-          <QuickAction
-            label="Record a payment"
-            description="Mark an invoice as paid and track received payments."
-            onClick={() => navigate("/dashboard/payments")}
-            icon={
-              <svg width="18" height="18" fill="none" stroke="#2563eb" strokeWidth="1.8" viewBox="0 0 24 24">
-                <rect x="2" y="5" width="20" height="14" rx="2" />
-                <line x1="2" y1="10" x2="22" y2="10" />
-              </svg>
-            }
-          />
-          <QuickAction
-            label="View reports"
-            description="See monthly revenue breakdowns and download PDF reports."
-            onClick={() => navigate("/dashboard/reports")}
-            icon={
-              <svg width="18" height="18" fill="none" stroke="#2563eb" strokeWidth="1.8" viewBox="0 0 24 24">
-                <line x1="18" y1="20" x2="18" y2="10" />
-                <line x1="12" y1="20" x2="12" y2="4" />
-                <line x1="6" y1="20" x2="6" y2="14" />
-              </svg>
-            }
-          />
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <h2 className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide">
+            Quick actions
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            <QuickAction
+              label="Create Invoice"
+              description="Generate new invoice"
+              accent="bg-blue-50"
+              onClick={() => navigate("/dashboard/invoices/new")}
+              icon={
+                <svg width="16" height="16" fill="none" stroke="#2563eb" strokeWidth="1.8" viewBox="0 0 24 24">
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="12" y1="18" x2="12" y2="12" />
+                  <line x1="9" y1="15" x2="15" y2="15" />
+                </svg>
+              }
+            />
+            <QuickAction
+              label="Add Customer"
+              description="Register new customer"
+              accent="bg-green-50"
+              onClick={() => navigate("/dashboard/customers/new")}
+              icon={
+                <svg width="16" height="16" fill="none" stroke="#16a34a" strokeWidth="1.8" viewBox="0 0 24 24">
+                  <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                  <circle cx="8.5" cy="7" r="4" />
+                  <line x1="20" y1="8" x2="20" y2="14" />
+                  <line x1="23" y1="11" x2="17" y2="11" />
+                </svg>
+              }
+            />
+            <QuickAction
+              label="Record Payment"
+              description="Log a payment"
+              accent="bg-orange-50"
+              onClick={() => navigate("/dashboard/payments")}
+              icon={
+                <svg width="16" height="16" fill="none" stroke="#d97706" strokeWidth="1.8" viewBox="0 0 24 24">
+                  <rect x="2" y="5" width="20" height="14" rx="2" />
+                  <line x1="2" y1="10" x2="22" y2="10" />
+                </svg>
+              }
+            />
+            <QuickAction
+              label="View Reports"
+              description="Business analytics"
+              accent="bg-purple-50"
+              onClick={() => navigate("/dashboard/reports")}
+              icon={
+                <svg width="16" height="16" fill="none" stroke="#9333ea" strokeWidth="1.8" viewBox="0 0 24 24">
+                  <line x1="18" y1="20" x2="18" y2="10" />
+                  <line x1="12" y1="20" x2="12" y2="4" />
+                  <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+              }
+            />
+          </div>
         </div>
       </div>
-</div>
+
+      {/* Row 3: Top Customers, full width */}
+      <div className="mb-8">
+        <TopCustomersCard />
+      </div>
+    </div>
   );
 }
