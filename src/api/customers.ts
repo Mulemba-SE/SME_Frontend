@@ -91,6 +91,11 @@ export const customersApi = {
     };
   },
 
+  getByUserNo: async (userNo: string | number): Promise<Customer> => {
+    const res = await api.get<Partial<Customer>>(`${API.CUSTOMERS.DETAIL}/${userNo}`);
+    return normalizeCustomer(res.data);
+  },
+
   create: async (input: CreateCustomerRequest): Promise<Customer> => {
     const payload = {
       firstName: input.firstName,

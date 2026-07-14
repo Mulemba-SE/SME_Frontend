@@ -12,6 +12,14 @@ export function useCustomers(params: CustomerListParams) {
   });
 }
 
+export function useCustomer(userNo: string | number | undefined) {
+  return useQuery({
+    queryKey: [CUSTOMERS_KEY, "detail", userNo],
+    queryFn: () => customersApi.getByUserNo(userNo!),
+    enabled: userNo !== undefined && userNo !== null && userNo !== "" && !Number.isNaN(Number(userNo)),
+  });
+}
+
 export function useCreateCustomer() {
   const queryClient = useQueryClient();
 

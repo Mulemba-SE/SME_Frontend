@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { customersApi } from "../../../api/customers";
+import { useCustomer } from "../../../hooks/useCustomers";
 import { invoicesApi } from "../../../api/invoices";
 import { formatKES, formatDate } from "../../../lib/format";
 import type { InvoiceListItem } from "../../../types/invoice";
@@ -122,19 +122,7 @@ export default function CustomerDetailPage() {
 
   const customerId = Number(userNo);
 
-  const { data: customerList, isLoading: isCustomerLoading, isError: isCustomerError } = useQuery({
-    queryKey: ["customer", userNo],
-    queryFn: async () => {
-      const res = await customersApi.list({
-        search: userNo,
-        searchBy: "userNo",
-        page: 1,
-        limit: 1,
-      });
-      return res;
-    },
-    enabled: Boolean(userNo && !Number.isNaN(customerId)),
-  });
+  const { data: customer, isLoading: isCustomerLoading, isError: isCustomerError } = useCustomer(userNo);
 
   const { data: invoices = [], isLoading: isInvoicesLoading, isError: isInvoicesError } = useQuery({
     queryKey: ["customer-invoices", userNo],
@@ -149,19 +137,17 @@ export default function CustomerDetailPage() {
     enabled: Boolean(userNo && !Number.isNaN(customerId)),
   });
 
-  const customer = customerList?.data?.[0] ?? null;
-  const reconciledInvoices = (invoices ?? []).filter(
-    (invoice) => Number(invoice.customerNo) === customerId
-  );
-  const latestInvoice = reconciledInvoices[0] ?? null;
-  const totalInvoiceCount = reconciledInvoices.length;
-  const totalInvoiceValue = reconciledInvoices.reduce((sum, invoice) => sum + Number(invoice.invoiceTotal ?? 0), 0);
-  const totalAmountPaid = reconciledInvoices.reduce((sum, invoice) => sum + Number(invoice.amountPaid ?? 0), 0);
+  const latestInvoice = invoices[0] ?? null;
+  const totalInvoiceCount = invoices.length;
+  const totalInvoiceValue = invoices.reduce((sum, invoice) => sum + Number(invoice.invoiceTotal ?? 0), 0);
+  const totalAmountPaid = invoices.reduce((sum, invoice) => sum + Number(invoice.amountPaid ?? 0), 0);
   const totalOutstanding = Math.max(0, totalInvoiceValue - totalAmountPaid);
 
-  const displayName = [latestInvoice?.firstName, latestInvoice?.lastName, customer?.firstName, customer?.lastName]
-    .filter(Boolean)
-    .join(" ") || customer?.email || "—";
+  const displayName =
+    [latestInvoice?.firstName, latestInvoice?.lastName].filter(Boolean).join(" ") ||
+    [customer?.firstName, customer?.lastName].filter(Boolean).join(" ") ||
+    customer?.email ||
+    "—";
 
   const latestInvoiceNumber = latestInvoice?.invoiceNo != null
     ? `INV-${String(latestInvoice.invoiceNo).padStart(7, "0")}`
@@ -173,7 +159,7 @@ export default function CustomerDetailPage() {
   const latestInvoiceStatus = latestInvoice?.status ?? customer?.status ?? "—";
 
   if (isCustomerLoading || isInvoicesLoading) return <Skeleton />;
-  if (isCustomerError || isInvoicesError || customer === null) return <ErrorState userNo={userNo ?? ""} />;
+  if (isCustomerError || isInvoicesError) return <ErrorState userNo={userNo ?? ""} />;
   if (!customer) return <ErrorState userNo={userNo ?? ""} />;
 
   return (

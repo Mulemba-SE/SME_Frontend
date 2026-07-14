@@ -10,6 +10,7 @@ export const API = {
     LIST: "/customer",
     CREATE: "/customer/register",
     STATS: "/customer/dashboard",
+    DETAIL: "/customer",
   },
 
   INVOICES: {

@@ -135,6 +135,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
           label="Total Revenue"
+          
           value={revenueUnavailable ? "—" : formatKES(revenueSummary?.totalRevenue ?? 0)}
           sub="Last 30 days"
           accent="bg-blue-50"
@@ -306,7 +307,7 @@ export default function DashboardPage() {
             />
             <QuickAction
               label="Record Payment"
-              description="Log a payment"
+              description="Log a payment" 
               accent="bg-orange-50"
               onClick={() => navigate("/dashboard/payments")}
               icon={

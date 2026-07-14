@@ -51,6 +51,12 @@ function formatShortDate(iso: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
 }
 
+function formatCompactKES(amount: number): string {
+  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M`;
+  if (amount >= 1_000) return `${(amount / 1_000).toFixed(1)}K`;
+  return amount.toFixed(0);
+}
+
 function getPriorPeriodLabel(from: string, to: string): string {
   const fromDate = new Date(from + "T00:00:00");
   const toDate = new Date(to + "T00:00:00");
@@ -131,6 +137,7 @@ export default function ReportsPage() {
     amount: p.amount,
   }));
 
+  const totalMethodAmount = (methodData ?? []).reduce((sum, m) => sum + m.amount, 0);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
@@ -294,8 +301,24 @@ export default function ReportsPage() {
                       <Cell key={entry.method} fill={methodColor(entry.method)} />
                     ))}
                   </Pie>
-                <Tooltip formatter={(value) => formatKES(Number(value))} />                
-
+                  <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" dy={-16} fill="#9ca3af" fontSize={10}>
+                    KES
+                  </text>
+                  <text
+                    x="50%"
+                    y="50%"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fill="#111827"
+                    fontSize={17}
+                    fontWeight={700}
+                  >
+                    {formatCompactKES(totalMethodAmount)}
+                  </text>
+                  <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" dy={16} fill="#9ca3af" fontSize={10}>
+                    Total
+                  </text>
+                  <Tooltip formatter={(value) => formatKES(Number(value))} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="space-y-3 mt-2">
