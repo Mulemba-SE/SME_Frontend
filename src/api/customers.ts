@@ -32,7 +32,6 @@ function normalizeCustomer(raw: Partial<Customer> & Record<string, unknown>): Cu
   };
 }
 
-// Global error interceptor (already good)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -102,7 +101,7 @@ export const customersApi = {
       lastName: input.lastName,
       email: input.email,
       phoneNumber: input.phone 
-        ? `${input.phoneCountryCode || "+254"}${input.phone}`.trim()
+        ? `${input.phoneCountryCode || "+254"}${input.phone}`.trim() //concatenate the country code and phone number, defaulting to +254 if not provided
         : undefined,
       password: crypto.randomUUID(), // temporary — manager-created customers
     };
