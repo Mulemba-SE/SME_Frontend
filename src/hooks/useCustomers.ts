@@ -20,6 +20,13 @@ export function useCustomer(userNo: string | number | undefined) {
   });
 }
 
+export function useCustomerStats() {
+  return useQuery({
+    queryKey: [CUSTOMERS_KEY, "stats"],
+    queryFn: () => customersApi.stats(),
+  });
+}
+
 export function useCreateCustomer() {
   const queryClient = useQueryClient();
 
@@ -31,9 +38,3 @@ export function useCreateCustomer() {
   });
 }
 
-export function useCustomerStats() {
-  return useQuery({
-    queryKey: [CUSTOMERS_KEY, "stats"],
-    queryFn: () => customersApi.stats(),
-  });
-}
