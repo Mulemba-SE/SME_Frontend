@@ -1,4 +1,5 @@
-import axios from "axios";
+import { api } from "./client";
+import { API } from "./endpoints";
 import type {
   ReportsFilterParams,
   ReportsSummary,
@@ -7,12 +8,6 @@ import type {
   TopCustomer,
   OverdueSummary,
 } from "../types/report";
-
-const api = axios.create({
-  baseURL: "",
-  headers: { "Content-Type": "application/json" },
-  withCredentials: true,
-});
 
 function normalizeSummary(raw: Partial<ReportsSummary> & Record<string, unknown>): ReportsSummary {
   return {
@@ -29,21 +24,21 @@ function normalizeSummary(raw: Partial<ReportsSummary> & Record<string, unknown>
 
 export const reportsApi = {
   summary: async (params: ReportsFilterParams): Promise<ReportsSummary> => {
-    const res = await api.get<Partial<ReportsSummary>>("/reports/summary", {
+    const res = await api.get<Partial<ReportsSummary>>(API.REPORTS.SUMMARY, {
       params: { from: params.from, to: params.to },
     });
     return normalizeSummary(res.data ?? {});
   },
 
   overdueSummary: async (): Promise<OverdueSummary> => {
-    const res = await api.get<OverdueSummary>("/reports/overdue-summary");
+    const res = await api.get<OverdueSummary>(API.REPORTS.OVERDUE_SUMMARY);
     return {
       overdueAmount: Number(res.data?.overdueAmount ?? 0),
     };
   },
 
   revenue: async (params: ReportsFilterParams): Promise<RevenuePoint[]> => {
-    const res = await api.get<RevenuePoint[]>("/reports/revenue", {
+    const res = await api.get<RevenuePoint[]>(API.REPORTS.REVENUE, {
       params: {
         from: params.from,
         to: params.to,
@@ -57,7 +52,7 @@ export const reportsApi = {
   },
 
   paymentsByMethod: async (params: ReportsFilterParams): Promise<PaymentMethodBreakdown[]> => {
-    const res = await api.get<PaymentMethodBreakdown[]>("/reports/payments-by-method", {
+    const res = await api.get<PaymentMethodBreakdown[]>(API.REPORTS.PAYMENTS_BY_METHOD, {
       params: { from: params.from, to: params.to },
     });
     return (res.data ?? []).map((p) => ({
@@ -68,7 +63,7 @@ export const reportsApi = {
   },
 
   topCustomers: async (params: ReportsFilterParams, limit = 5): Promise<TopCustomer[]> => {
-    const res = await api.get<TopCustomer[]>("/reports/top-customers", {
+    const res = await api.get<TopCustomer[]>(API.REPORTS.TOP_CUSTOMERS, {
       params: { from: params.from, to: params.to, limit },
     });
     return (res.data ?? []).map((c) => ({

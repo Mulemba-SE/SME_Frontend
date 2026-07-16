@@ -1,36 +1,7 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { usePaymentsByMethod } from "../../hooks/useReports";
-import { formatKES } from "../../lib/format";
-
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function daysAgoISO(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
-}
-
-const METHOD_LABELS: Record<string, string> = {
-  M_PESA: "M-Pesa",
-  BANK_TRANSFER: "Bank Transfer",
-  CASH: "Cash",
-};
-
-const METHOD_COLORS: Record<string, string> = {
-  M_PESA: "#2563eb",
-  BANK_TRANSFER: "#16a34a",
-  CASH: "#f28305",
-};
-
-function methodLabel(method: string) {
-  return METHOD_LABELS[method] ?? method;
-}
-
-function methodColor(method: string) {
-  return METHOD_COLORS[method] ?? "#07f717";
-}
+import { formatKES, todayISO, daysAgoISO } from "../../lib/format";
+import { methodLabel, methodChartColor } from "../../lib/paymentMethod";
 
 export function PaymentsOverviewCard() {
   const filterParams = { from: daysAgoISO(30), to: todayISO() };
@@ -63,7 +34,7 @@ export function PaymentsOverviewCard() {
                   paddingAngle={2}
                 >
                   {(methodData ?? []).map((entry) => (
-                    <Cell key={entry.method} fill={methodColor(entry.method)} />
+                    <Cell key={entry.method} fill={methodChartColor(entry.method)} />
                   ))}
                 </Pie>
                 <Tooltip formatter={(value) => formatKES(Number(value))} />
@@ -81,7 +52,7 @@ export function PaymentsOverviewCard() {
               <div key={m.method} className="flex items-center gap-2">
                 <span
                   className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                  style={{ background: methodColor(m.method) }}
+                  style={{ background: methodChartColor(m.method) }}
                 />
                 <div className="text-xs min-w-0">
                   <div className="font-semibold text-gray-900 truncate">{methodLabel(m.method)}</div>

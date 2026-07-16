@@ -1,4 +1,4 @@
-import axios from "axios";
+import { api } from "./client";
 import { API } from "./endpoints";
 import type {
   Customer,
@@ -7,12 +7,6 @@ import type {
   CustomerListResponse,
   CustomerStats,
 } from "../types/customer";
-
-const api = axios.create({
-  baseURL: "",
-  headers: { "Content-Type": "application/json" },
-  withCredentials: true,
-});
 
 function normalizeCustomer(raw: Partial<Customer> & Record<string, unknown>): Customer {
   return {
@@ -31,36 +25,6 @@ function normalizeCustomer(raw: Partial<Customer> & Record<string, unknown>): Cu
     dueDate: typeof raw.dueDate === "string" ? raw.dueDate : undefined,
   };
 }
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const data = error.response?.data;
-    const errorCode = data?.errorCode;
-    const fieldErrors = data?.errors as Record<string, string> | undefined;
-
-    if (errorCode === "VALIDATION_ERROR" && fieldErrors) {
-      const firstMessage = Object.values(fieldErrors)[0] ?? "Please check the form for errors.";
-      const apiError = Object.assign(new Error(firstMessage), {
-        errorCode,
-        isApiError: true,
-        fieldErrors,
-      });
-      return Promise.reject(apiError);
-    }
-
-    const serverMessage = data?.message;
-    if (serverMessage) {
-      const apiError = Object.assign(new Error(serverMessage), {
-        errorCode,
-        isApiError: true,
-      });
-      return Promise.reject(apiError);
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 export const customersApi = {
   list: async (params: CustomerListParams): Promise<CustomerListResponse> => {

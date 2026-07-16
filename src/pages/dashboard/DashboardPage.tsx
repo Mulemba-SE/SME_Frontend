@@ -6,32 +6,9 @@ import { useReportsSummary, useOverdueSummary } from "../../hooks/useReports";
 import { InvoicesOverviewChart } from "../../components/layout/InvoicesOverviewChart";
 import { TopCustomersCard } from "../../components/layout/TopCustomersCard";
 import { PaymentsOverviewCard } from "../../components/layout/PaymentsOverviewCard";
-import { formatKES, formatDate } from "../../lib/format";
-
-interface StatCardProps {
-  label: string;
-  value: string;
-  sub: string;
-  icon: React.ReactNode;
-  accent: string;
-}
-
-function StatCard({ label, value, sub, icon, accent }: StatCardProps) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-100 p-5 flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500 font-medium">{label}</p>
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${accent}`}>
-          {icon}
-        </div>
-      </div>
-      <div>
-        <p className="text-xl font-bold text-gray-900">{value}</p>
-        <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
-      </div>
-    </div>
-  );
-}
+import { StatCard } from "../../components/ui/StatCard";
+import { InvoiceStatusBadge } from "../../components/ui/StatusBadge";
+import { formatKES, formatDate, todayISO, daysAgoISO } from "../../lib/format";
 
 interface QuickActionProps {
   label: string;
@@ -76,14 +53,6 @@ const RECENT_ICON_PALETTE = [
   { bg: "#F3E8FF", color: "#9333EA" },
 ];
 
-const RECENT_STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  PAID: { bg: "bg-green-50", text: "text-green-700", label: "Paid" },
-  PENDING: { bg: "bg-blue-50", text: "text-blue-700", label: "Pending" },
-  SENT: { bg: "bg-blue-50", text: "text-blue-700", label: "Pending" },
-  OVERDUE: { bg: "bg-red-50", text: "text-red-600", label: "Overdue" },
-  DRAFT: { bg: "bg-gray-100", text: "text-gray-500", label: "Draft" },
-};
-
 function InvoiceDocIcon({ color }: { color: string }) {
   return (
     <svg width="16" height="16" fill="none" stroke={color} strokeWidth="1.8" viewBox="0 0 24 24">
@@ -100,11 +69,9 @@ export default function DashboardPage() {
   const { data: invoiceStats, isLoading: isInvoiceStatsLoading, isError: isInvoiceStatsError } = useInvoiceStats();
   const invoiceStatsUnavailable = isInvoiceStatsLoading || isInvoiceStatsError;
 
-  const todayISO = new Date().toISOString().slice(0, 10);
-  const thirtyDaysAgoISO = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const { data: revenueSummary, isLoading: isRevenueLoading, isError: isRevenueError } = useReportsSummary({
-    from: thirtyDaysAgoISO,
-    to: todayISO,
+    from: daysAgoISO(30),
+    to: todayISO(),
   });
   const revenueUnavailable = isRevenueLoading || isRevenueError;
 
@@ -137,8 +104,7 @@ export default function DashboardPage() {
           label="Total Revenue"
           
           value={revenueUnavailable ? "—" : formatKES(revenueSummary?.totalRevenue ?? 0)}
-          sub="Last 30 days"
-          accent="bg-blue-50"
+          iconBg="#EFF6FF"
           icon={
             <svg width="18" height="18" fill="none" stroke="#2563eb" strokeWidth="1.8" viewBox="0 0 24 24">
               <line x1="12" y1="1" x2="12" y2="23" />
@@ -149,8 +115,7 @@ export default function DashboardPage() {
         <StatCard
           label="Outstanding"
           value={invoiceStatsUnavailable ? "—" : formatKES(invoiceStats?.amount_receivables ?? 0)}
-          sub="Pending + overdue invoices"
-          accent="bg-amber-50"
+          iconBg="#FEF3C7"
           icon={
             <svg width="18" height="18" fill="none" stroke="#d97706" strokeWidth="1.8" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="10" />
@@ -161,8 +126,7 @@ export default function DashboardPage() {
         <StatCard
           label="Overdue"
           value={overdueUnavailable ? "—" : formatKES(overdueSummary?.overdueAmount ?? 0)}
-          sub="Needs attention"
-          accent="bg-red-50"
+          iconBg="#FEE2E2"
           icon={
             <svg width="18" height="18" fill="none" stroke="#dc2626" strokeWidth="1.8" viewBox="0 0 24 24">
               <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
@@ -174,8 +138,7 @@ export default function DashboardPage() {
         <StatCard
           label="Customers"
           value={String(customerCount)}
-          sub={customerCount ? "Active customers" : "Add your first customer"}
-          accent="bg-purple-50"
+          iconBg="#F3E8FF"
           icon={
             <svg width="18" height="18" fill="none" stroke="#9333ea" strokeWidth="1.8" viewBox="0 0 24 24">
               <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
@@ -224,8 +187,6 @@ export default function DashboardPage() {
               <div className="divide-y divide-gray-50">
                 {recentInvoices.map((invoice, index) => {
                   const palette = RECENT_ICON_PALETTE[index % RECENT_ICON_PALETTE.length];
-                  const statusStyle =
-                    RECENT_STATUS_STYLES[invoice.status?.toUpperCase()] ?? RECENT_STATUS_STYLES.DRAFT;
                   const customerName = [invoice.firstName, invoice.lastName].filter(Boolean).join(" ") || "—";
 
                   return (
@@ -253,11 +214,9 @@ export default function DashboardPage() {
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="text-sm font-semibold text-gray-900">{formatKES(invoice.invoiceTotal ?? 0)}</p>
-                        <span
-                          className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${statusStyle.bg} ${statusStyle.text}`}
-                        >
-                          {statusStyle.label}
-                        </span>
+                        <div className="mt-1 inline-block">
+                          <InvoiceStatusBadge status={invoice.status ?? "draft"} size="xs" />
+                        </div>
                       </div>
                     </div>
                   );
@@ -309,7 +268,7 @@ export default function DashboardPage() {
               label="Record Payment"
               description="Log a payment" 
               accent="bg-orange-50"
-              onClick={() => navigate("/dashboard/payments")}
+              onClick={() => navigate("/dashboard/payments/new")}
               icon={
                 <svg width="16" height="16" fill="none" stroke="#d97706" strokeWidth="1.8" viewBox="0 0 24 24">
                   <rect x="2" y="5" width="20" height="14" rx="2" />

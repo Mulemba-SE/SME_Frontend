@@ -2,55 +2,12 @@ import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { invoicesApi } from "../../../api/invoices";
-import { getApiErrorMessage } from "../../../api/auth";
+import { getApiErrorMessage } from "../../../api/client";
 import { usePayments } from "../../../hooks/usePayments";
 import { StatCard } from "../../../components/ui/StatCard";
+import { InvoiceStatusBadge as StatusBadge, PaymentStatusBadge } from "../../../components/ui/StatusBadge";
 import { formatKES, formatDate } from "../../../lib/format";
-import type { InvoiceDetail, InvoiceListItem, InvoiceStatus } from "../../../types/invoice";
-import type { PaymentStatus } from "../../../types/payment";
-
-
-const STATUS_STYLES: Record<InvoiceStatus, { bg: string; text: string; dot: string; label: string }> = {
-  draft: { bg: "bg-gray-50 border-gray-200", text: "text-gray-600", dot: "bg-gray-400", label: "Draft" },
-  sent: { bg: "bg-blue-50 border-blue-100", text: "text-blue-700", dot: "bg-blue-500", label: "Sent" },
-  pending: { bg: "bg-amber-50 border-amber-100", text: "text-amber-700", dot: "bg-amber-500", label: "Pending" },
-  overdue: { bg: "bg-red-50 border-red-100", text: "text-red-600", dot: "bg-red-400", label: "Overdue" },
-  paid: { bg: "bg-green-50 border-green-100", text: "text-green-700", dot: "bg-green-500", label: "Paid" },
-};
-
-const PAYMENT_STATUS_STYLES: Record<PaymentStatus, { bg: string; text: string; dot: string; label: string }> = {
-  pending: { bg: "bg-amber-50 border-amber-100", text: "text-amber-700", dot: "bg-amber-500", label: "Pending" },
-  confirmed: { bg: "bg-green-50 border-green-100", text: "text-green-700", dot: "bg-green-500", label: "Confirmed" },
-  failed: { bg: "bg-red-50 border-red-100", text: "text-red-600", dot: "bg-red-400", label: "Failed" },
-};
-
-function StatusBadge({ status, size = "sm" }: { status: string; size?: "xs" | "sm" | "md" }) {
-  const s = STATUS_STYLES[status.toLowerCase() as InvoiceStatus] ?? {
-    bg: "bg-gray-100 border-gray-200",
-    text: "text-gray-500",
-    dot: "bg-gray-400",
-    label: status,
-  };
-  const sizeClasses =
-    size === "xs" ? "gap-1 px-1.5 py-0.5 text-[10px]" : size === "sm" ? "gap-1 px-2 py-0.5 text-xs" : "gap-1 px-2 py-0.5 text-xs";
-  const dotSize = size === "xs" ? "w-1 h-1" : size === "sm" ? "w-1.5 h-1.5" : "w-1.5 h-1.5";
-  return (
-    <span className={`inline-flex items-center rounded-full font-semibold border ${sizeClasses} ${s.bg} ${s.text}`}>
-      <span className={`rounded-full ${dotSize} ${s.dot}`} />
-      {s.label}
-    </span>
-  );
-}
-
-function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
-  const s = PAYMENT_STATUS_STYLES[status];
-  return (
-    <span className={`inline-flex items-center rounded-full font-semibold border gap-1 px-2 py-0.5 text-xs ${s.bg} ${s.text}`}>
-      <span className={`rounded-full w-1.5 h-1.5 ${s.dot}`} />
-      {s.label}
-    </span>
-  );
-}
+import type { InvoiceDetail, InvoiceListItem } from "../../../types/invoice";
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (

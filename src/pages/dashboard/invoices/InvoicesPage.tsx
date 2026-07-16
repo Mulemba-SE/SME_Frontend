@@ -1,48 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useInvoices, useInvoiceStats } from "../../../hooks/useInvoices";
-import { getApiErrorMessage } from "../../../api/auth";
+import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
+import { getApiErrorMessage } from "../../../api/client";
 import { StatCard } from "../../../components/ui/StatCard";
 import { Pagination } from "../../../components/ui/Pagination";
+import { InvoiceStatusBadge as StatusBadge } from "../../../components/ui/StatusBadge";
 import { formatKES, formatDate } from "../../../lib/format";
 import type { InvoiceListItem, InvoiceStatus } from "../../../types/invoice";
 
 const PAGE_SIZE = 8;
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const handle = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(handle);
-  }, [value, delayMs]);
-  return debounced;
-}
-
-// Status Badge
-const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string; label: string }> = {
-  DRAFT: { bg: "bg-gray-100 border-gray-200", text: "text-gray-500", dot: "bg-gray-400", label: "Draft" },
-  SENT: { bg: "bg-blue-50 border-blue-100", text: "text-blue-700", dot: "bg-blue-500", label: "Sent" },
-  PENDING: { bg: "bg-amber-50 border-amber-100", text: "text-amber-700", dot: "bg-amber-500", label: "Pending" },
-  OVERDUE: { bg: "bg-red-50 border-red-100", text: "text-red-600", dot: "bg-red-400", label: "Overdue" },
-  PAID: { bg: "bg-green-50 border-green-100", text: "text-green-700", dot: "bg-green-500", label: "Paid" },
-};
-
-const DEFAULT_STATUS_STYLE = {
-  bg: "bg-gray-100 border-gray-200",
-  text: "text-gray-500",
-  dot: "bg-gray-400",
-};
-
-function StatusBadge({ status }: { status: InvoiceStatus }) {
-  const key = status.toUpperCase();
-  const s = STATUS_STYLES[key] ?? { ...DEFAULT_STATUS_STYLE, label: status };
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${s.bg} ${s.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
-      {s.label}
-    </span>
-  );
-}
 
 // Skeleton
 
@@ -206,8 +173,8 @@ export default function InvoicesPage() {
     const hasCustomerNo = invoice.customerNo != null;
     return hasInvoiceNo && hasCustomerNo;
   });
-  // Backend doesn't return a total count
-  const totalPages = page + (invoices.length === PAGE_SIZE ? 1 : 0);
+ 
+  const totalPages = page + (rawInvoices.length === PAGE_SIZE ? 1 : 0);
 
   const searchPlaceholder =
     searchBy === "firstName"

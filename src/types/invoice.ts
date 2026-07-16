@@ -74,20 +74,6 @@ export interface InvoicesFilterParams {
   limit?: number;
 }
 
-export interface InvoiceListParams {
-  search?: string;
-  status?: InvoiceStatus | "all";
-  page?: number;
-  limit?: number;
-}
-
-export interface InvoiceListResponse {
-  data: InvoiceListItem[];
-  total: number;
-  page: number;
-  limit: number;
-}
-
 export interface InvoiceStats {
   draft: number;
   pending: number;

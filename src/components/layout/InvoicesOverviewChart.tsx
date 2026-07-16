@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useRevenueChart } from "../../hooks/useReports";
-import { formatKES } from "../../lib/format";
+import { formatKES, todayISO, daysAgoISO, firstOfMonthISO, formatShortDate } from "../../lib/format";
 import type { ReportGranularity } from "../../types/report";
 
 type Period = "week" | "month" | "quarter";
@@ -19,22 +19,6 @@ const PERIOD_LABELS: Record<Period, string> = {
   month: "This Month",
   quarter: "Last 3 Months",
 };
-
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function daysAgoISO(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
-}
-
-function firstOfMonthISO(): string {
-  const d = new Date();
-  d.setDate(1);
-  return d.toISOString().slice(0, 10);
-}
 
 function getPeriodRange(period: Period): { from: string; to: string; granularity: ReportGranularity } {
   const to = todayISO();
@@ -46,11 +30,6 @@ function getPeriodRange(period: Period): { from: string; to: string; granularity
     case "quarter":
       return { from: daysAgoISO(89), to, granularity: "WEEKLY" };
   }
-}
-
-function formatShortDate(iso: string): string {
-  const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
 }
 
 function ChartSkeleton() {

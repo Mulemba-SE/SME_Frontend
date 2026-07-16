@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { InputField } from "../../../components/ui/InputField";
 import { SelectField } from "../../../components/ui/SelectField";
-import { getApiErrorMessage, getApiFieldErrors } from "../../../api/auth";
+import { getApiErrorMessage, getApiFieldErrors } from "../../../api/client";
 import { formatKES } from "../../../lib/format";
 import { useCreatePayment } from "../../../hooks/usePayments";
 import type { PaymentMethod } from "../../../types/payment";
@@ -17,7 +17,7 @@ interface FormState {
 }
 
 const PAYMENT_METHODS = [
-  { value: "BANK", label: "Bank Transfer" },
+  { value: "BANK", label: "Bank" },
   { value: "CASH", label: "Cash" },
   { value: "M_PESA", label: "M-Pesa" },
 ];

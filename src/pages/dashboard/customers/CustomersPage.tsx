@@ -1,9 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCustomers, useCustomerStats } from "../../../hooks/useCustomers";
-import { getApiErrorMessage } from "../../../api/auth";
+import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
+import { getApiErrorMessage } from "../../../api/client";
 import { StatCard } from "../../../components/ui/StatCard";
 import { Pagination } from "../../../components/ui/Pagination";
+import { InvoiceStatusBadge as StatusBadge } from "../../../components/ui/StatusBadge";
+import { Avatar } from "../../../components/ui/Avatar";
 import { formatKES, formatDate } from "../../../lib/format";
 import type { Customer } from "../../../types/customer";
 
@@ -12,68 +15,6 @@ type InvoiceStatus = "paid" | "pending" | "overdue" | "draft";
 type SearchBy = "email" | "userNo" | "phoneNumber" | "dueDate";
 
 const PAGE_SIZE = 8;
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const handle = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(handle);
-  }, [value, delayMs]);
-  return debounced;
-}
-
-function getAvatarProps(name: string): { initials: string; bg: string; color: string } {
-  const parts = name.trim().split(/\s+/);
-  const initials =
-    parts.length >= 2
-      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-      : name.slice(0, 2).toUpperCase();
-
-  const palette = [
-    { bg: "#EEF2FF", color: "#4F46E5" },
-    { bg: "#FEF3C7", color: "#D97706" },
-    { bg: "#DCFCE7", color: "#16A34A" },
-    { bg: "#FCE7F3", color: "#DB2777" },
-    { bg: "#E0F2FE", color: "#0284C7" },
-    { bg: "#F3E8FF", color: "#9333EA" },
-    { bg: "#FFF7ED", color: "#EA580C" },
-    { bg: "#F0FDF4", color: "#15803D" },
-  ];
-  const idx =
-    name.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % palette.length;
-  return { initials, ...palette[idx] };
-}
-
-const STATUS_STYLES: Record<InvoiceStatus, { bg: string; text: string; dot: string; label: string }> = {
-  paid:    { bg: "bg-green-50 border-green-100",  text: "text-green-700", dot: "bg-green-500", label: "Paid" },
-  pending: { bg: "bg-amber-50 border-amber-100",  text: "text-amber-700", dot: "bg-amber-500", label: "Pending" },
-  overdue: { bg: "bg-red-50 border-red-100",      text: "text-red-600",   dot: "bg-red-400",   label: "Overdue" },
-  draft:   { bg: "bg-gray-100 border-gray-200",  text: "text-gray-500", dot: "bg-gray-400", label: "Draft" },
-};
-
-function StatusBadge({ status }: { status: string }) {
-  const s = STATUS_STYLES[status as InvoiceStatus] ?? {
-    bg: "bg-gray-100 border-gray-200", text: "text-gray-500", dot: "bg-gray-400", label: status,
-  };
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${s.bg} ${s.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
-      {s.label}
-    </span>
-  );
-}
-
-function Avatar({ name }: { name: string }) {
-  const { initials, bg, color } = getAvatarProps(name);
-  return (
-    <div
-      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
-      style={{ background: bg, color }}
-    >
-      {initials}
-    </div>
-  );
-}
 
 function TableSkeleton() {
   return (
@@ -180,7 +121,7 @@ function CustomerRow({
       </td>
       <td className="px-4 py-3.5">
         <div className="flex items-center gap-3">
-          <Avatar name={customerName} />
+          <Avatar name={customerName} size="table" />
           <div>
             <Link
               to={`/dashboard/customers/${customer.userNo}`}

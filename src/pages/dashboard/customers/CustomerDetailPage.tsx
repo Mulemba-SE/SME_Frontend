@@ -2,68 +2,10 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useCustomer } from "../../../hooks/useCustomers";
 import { invoicesApi } from "../../../api/invoices";
+import { Avatar } from "../../../components/ui/Avatar";
+import { InvoiceStatusBadge as StatusBadge } from "../../../components/ui/StatusBadge";
 import { formatKES, formatDate } from "../../../lib/format";
 import type { InvoiceListItem } from "../../../types/invoice";
-
-// ── Avatar 
-
-function getAvatarProps(name: string): { initials: string; bg: string; color: string } {
-  const parts = name.trim().split(/\s+/);
-  const initials =
-    parts.length >= 2
-      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-      : name.slice(0, 2).toUpperCase();
-
-  const palette = [
-    { bg: "#EEF2FF", color: "#4F46E5" },
-    { bg: "#FEF3C7", color: "#D97706" },
-    { bg: "#DCFCE7", color: "#16A34A" },
-    { bg: "#FCE7F3", color: "#DB2777" },
-    { bg: "#E0F2FE", color: "#0284C7" },
-    { bg: "#F3E8FF", color: "#9333EA" },
-    { bg: "#FFF7ED", color: "#EA580C" },
-    { bg: "#F0FDF4", color: "#15803D" },
-  ];
-  const idx =
-    name.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % palette.length;
-  return { initials, ...palette[idx] };
-}
-
-function Avatar({ name, size = "lg" }: { name: string; size?: "sm" | "lg" }) {
-  const { initials, bg, color } = getAvatarProps(name);
-  const cls = size === "lg"
-    ? "w-16 h-16 rounded-2xl text-xl font-bold flex-shrink-0"
-    : "w-9 h-9 rounded-xl text-sm font-bold flex-shrink-0";
-  return (
-    <div className={`${cls} flex items-center justify-center`} style={{ background: bg, color }}>
-      {initials}
-    </div>
-  );
-}
-
-// ── Status Badge 
-
-type InvoiceStatus = "paid" | "pending" | "overdue" | "draft";
-
-const STATUS_STYLES: Record<InvoiceStatus, { bg: string; text: string; dot: string; label: string }> = {
-  paid:    { bg: "bg-green-50 border-green-100",  text: "text-green-700", dot: "bg-green-500", label: "Paid" },
-  pending: { bg: "bg-amber-50 border-amber-100",  text: "text-amber-700", dot: "bg-amber-500", label: "Pending" },
-  overdue: { bg: "bg-red-50 border-red-100",      text: "text-red-600",   dot: "bg-red-400",   label: "Overdue" },
-  draft:   { bg: "bg-gray-50 border-gray-200",    text: "text-gray-600",  dot: "bg-gray-400",   label: "Draft" },
-};
-
-function StatusBadge({ status }: { status: string }) {
-  const normalizedStatus = status?.toLowerCase();
-  const s = STATUS_STYLES[normalizedStatus as InvoiceStatus] ?? {
-    bg: "bg-gray-100 border-gray-200", text: "text-gray-500", dot: "bg-gray-400", label: status,
-  };
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${s.bg} ${s.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
-      {s.label}
-    </span>
-  );
-}
 
 // ── Detail Row 
 

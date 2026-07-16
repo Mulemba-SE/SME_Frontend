@@ -26,4 +26,12 @@ export const API = {
   DETAIL: "/payments/detailed-payment",
 },
 
+  REPORTS: {
+    SUMMARY: "/reports/summary",
+    OVERDUE_SUMMARY: "/reports/overdue-summary",
+    REVENUE: "/reports/revenue",
+    PAYMENTS_BY_METHOD: "/reports/payments-by-method",
+    TOP_CUSTOMERS: "/reports/top-customers",
+  },
+
 } as const;

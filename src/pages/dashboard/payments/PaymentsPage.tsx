@@ -1,42 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { usePayments, usePaymentStats } from "../../../hooks/usePayments";
-import { getApiErrorMessage } from "../../../api/auth";
+import { getApiErrorMessage } from "../../../api/client";
 import { StatCard } from "../../../components/ui/StatCard";
 import { Pagination } from "../../../components/ui/Pagination";
+import { PaymentStatusBadge as StatusBadge } from "../../../components/ui/StatusBadge";
+import { MethodBadge } from "../../../components/ui/MethodBadge";
 import { formatKES, formatDate } from "../../../lib/format";
 import type { PaymentListItem, PaymentStatus } from "../../../types/payment";
 
 const PAGE_SIZE = 10;
-
-const STATUS_STYLES: Record<PaymentStatus, { bg: string; text: string; dot: string; label: string }> = {
-  confirmed: { bg: "bg-green-50 border-green-100", text: "text-green-700", dot: "bg-green-500", label: "Confirmed" },
-  pending: { bg: "bg-amber-50 border-amber-100", text: "text-amber-700", dot: "bg-amber-500", label: "Pending" },
-  failed: { bg: "bg-red-50 border-red-100", text: "text-red-600", dot: "bg-red-400", label: "Failed" },
-};
-
-function StatusBadge({ status }: { status: PaymentStatus }) {
-  const s = STATUS_STYLES[status] ?? STATUS_STYLES.pending;
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${s.bg} ${s.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
-      {s.label}
-    </span>
-  );
-}
-
-function MethodBadge({ method }: { method: string }) {
-  const colors: Record<string, string> = {
-    "M-Pesa": "bg-emerald-100 text-emerald-700",
-    "Bank Transfer": "bg-blue-100 text-blue-700",
-    Cash: "bg-gray-100 text-gray-700",
-  };
-  return (
-    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${colors[method] || "bg-gray-100 text-gray-700"}`}>
-      {method}
-    </span>
-  );
-}
 
 function InlineEmpty({ hasFilters }: { hasFilters: boolean }) {
   return (
@@ -320,7 +293,7 @@ function PaymentRow({ payment }: { payment: PaymentListItem }) {
               </thead>
               <tbody className="divide-y divide-gray-100">
               {payments.map((p) => (
-                <PaymentRow key={p.id} payment={p} />
+                <PaymentRow key={`${p.paymentNo}-${p.invoiceNo}`} payment={p} />
               ))}
             </tbody>
             </table>

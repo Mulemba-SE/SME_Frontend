@@ -1,5 +1,6 @@
 import { useAuthStore } from "../store/authStore";
-import { authApi, getApiErrorMessage, getApiFieldErrors } from "../api/auth";
+import { authApi } from "../api/auth";
+import { getApiErrorMessage, getApiFieldErrors } from "../api/client";
 import type { LoginRequest, RegisterRequest } from "../types/auth";
 
 export function useAuth() {

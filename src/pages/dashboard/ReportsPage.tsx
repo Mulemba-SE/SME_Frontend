@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useReportsSummary, useRevenueChart, usePaymentsByMethod, useTopCustomers } from "../../hooks/useReports";
-import { formatKES, formatDate } from "../../lib/format";
+import { StatCard } from "../../components/ui/StatCard";
+import { formatKES, formatDate, todayISO, daysAgoISO, formatShortDate } from "../../lib/format";
+import { methodLabel, methodChartColor } from "../../lib/paymentMethod";
 import type { ReportGranularity } from "../../types/report";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -15,41 +17,6 @@ import {
   Pie,
   Cell,
 } from "recharts";
-
-const METHOD_LABELS: Record<string, string> = {
-  M_PESA: "M-Pesa",
-  BANK_TRANSFER: "Bank Transfer",
-  CASH: "Cash",
-};
-
-const METHOD_COLORS: Record<string, string> = {
-  M_PESA: "#2563eb",
-  BANK_TRANSFER: "#16a34a",
-  CASH: "#f28305",
-};
-
-function methodLabel(method: string) {
-  return METHOD_LABELS[method] ?? method;
-}
-
-function methodColor(method: string) {
-  return METHOD_COLORS[method] ?? "#07f717";
-}
-
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function daysAgoISO(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
-}
-
-function formatShortDate(iso: string): string {
-  const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
-}
 
 function formatCompactKES(amount: number): string {
   if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M`;
@@ -69,50 +36,6 @@ function getPriorPeriodLabel(from: string, to: string): string {
 
   const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
   return `${fmt(priorFrom)} - ${fmt(priorTo)}`;
-}
-
-function TrendBadge({ pct }: { pct: number }) {
-  const isPositive = pct >= 0;
-  return (
-    <span className={`inline-flex items-center gap-1 text-xs font-semibold ${isPositive ? "text-green-600" : "text-red-600"}`}>
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-        {isPositive ? <polyline points="18 15 12 9 6 15" /> : <polyline points="6 9 12 15 18 9" />}
-      </svg>
-      {Math.abs(pct).toFixed(1)}%
-    </span>
-  );
-}
-
-function ReportStatCard({
-  label,
-  value,
-  changePct,
-  comparisonLabel,
-  iconBg,
-  icon,
-}: {
-  label: string;
-  value: string;
-  changePct: number;
-  comparisonLabel: string;
-  iconBg: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: iconBg }}>
-          {icon}
-        </div>
-        <span className="text-sm text-gray-500">{label}</span>
-      </div>
-      <div className="text-xl font-bold text-gray-900 mb-1">{value}</div>
-      <div className="flex items-center gap-1.5 text-xs text-gray-400">
-        <TrendBadge pct={changePct} />
-        <span>vs {comparisonLabel}</span>
-      </div>
-    </div>
-  );
 }
 
 function ChartSkeleton() {
@@ -189,7 +112,7 @@ export default function ReportsPage() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
-        <ReportStatCard
+        <StatCard
           label="Total Revenue"
           value={summaryLoading ? "—" : formatKES(summary?.totalRevenue ?? 0)}
           changePct={summary?.revenueChangePct ?? 0}
@@ -202,7 +125,7 @@ export default function ReportsPage() {
             </svg>
           }
         />
-        <ReportStatCard
+        <StatCard
           label="Total Payments"
           value={summaryLoading ? "—" : formatKES(summary?.totalPayments ?? 0)}
           changePct={summary?.paymentsChangePct ?? 0}
@@ -215,7 +138,7 @@ export default function ReportsPage() {
             </svg>
           }
         />
-        <ReportStatCard
+        <StatCard
           label="Total Invoices"
           value={summaryLoading ? "—" : String(summary?.totalInvoices ?? 0)}
           changePct={summary?.invoicesChangePct ?? 0}
@@ -228,7 +151,7 @@ export default function ReportsPage() {
             </svg>
           }
         />
-        <ReportStatCard
+        <StatCard
           label="Outstanding Amount"
           value={summaryLoading ? "—" : formatKES(summary?.outstandingAmount ?? 0)}
           changePct={summary?.outstandingChangePct ?? 0}
@@ -263,7 +186,13 @@ export default function ReportsPage() {
             <ChartSkeleton />
           ) : (
             <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={chartData}>
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="reportsRevenueFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                 <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
                 <YAxis
@@ -272,9 +201,17 @@ export default function ReportsPage() {
                   tickLine={false}
                   tickFormatter={(v) => `KES ${(v / 1000).toFixed(0)}K`}
                 />
-                <Tooltip formatter={(value) => formatKES(Number(value))} />                
-                    <Line type="monotone" dataKey="amount" stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} name="Revenue (KES)" />
-              </LineChart>
+                <Tooltip formatter={(value) => formatKES(Number(value))} />
+                <Area
+                  type="monotone"
+                  dataKey="amount"
+                  stroke="#2563eb"
+                  strokeWidth={2}
+                  fill="url(#reportsRevenueFill)"
+                  dot={{ r: 3, fill: "#2563eb", strokeWidth: 2, stroke: "#fff" }}
+                  name="Revenue (KES)"
+                />
+              </AreaChart>
             </ResponsiveContainer>
           )}
         </div>
@@ -298,7 +235,7 @@ export default function ReportsPage() {
                     paddingAngle={2}
                   >
                     {(methodData ?? []).map((entry) => (
-                      <Cell key={entry.method} fill={methodColor(entry.method)} />
+                      <Cell key={entry.method} fill={methodChartColor(entry.method)} />
                     ))}
                   </Pie>
                   <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" dy={-16} fill="#9ca3af" fontSize={10}>
@@ -324,7 +261,7 @@ export default function ReportsPage() {
               <div className="space-y-3 mt-2">
                 {(methodData ?? []).map((m) => (
                   <div key={m.method} className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: methodColor(m.method) }} />
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: methodChartColor(m.method) }} />
                     <div className="text-xs">
                       <div className="font-semibold text-gray-900">{methodLabel(m.method)}</div>
                       <div className="text-gray-500">

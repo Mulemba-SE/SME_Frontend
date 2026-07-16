@@ -1,4 +1,4 @@
-import axios from "axios";
+import { api } from "./client";
 import { API } from "./endpoints";
 import type {
   InvoiceListItem,
@@ -9,12 +9,6 @@ import type {
   InvoicesFilterParams,
   InvoiceStats,
 } from "../types/invoice";
-
-const api = axios.create({
-  baseURL: "",
-  headers: { "Content-Type": "application/json" },
-  withCredentials: true,
-});
 
 function normalizeInvoice(raw: Partial<InvoiceListItem> & Record<string, unknown>): InvoiceListItem {
   return {
@@ -60,36 +54,6 @@ function normalizeInvoiceDetail(raw: Partial<InvoiceDetail> & Record<string, unk
       : [],
   };
 }
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const data = error.response?.data;
-    const errorCode = data?.errorCode;
-    const fieldErrors = data?.errors as Record<string, string> | undefined;
-
-    if (errorCode === "VALIDATION_ERROR" && fieldErrors) {
-      const firstMessage = Object.values(fieldErrors)[0] ?? "Please check the form for errors.";
-      const apiError = Object.assign(new Error(firstMessage), {
-        errorCode,
-        isApiError: true,
-        fieldErrors,
-      });
-      return Promise.reject(apiError);
-    }
-
-    const serverMessage = data?.message;
-    if (serverMessage) {
-      const apiError = Object.assign(new Error(serverMessage), {
-        errorCode,
-        isApiError: true,
-      });
-      return Promise.reject(apiError);
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 export const invoicesApi = {
 

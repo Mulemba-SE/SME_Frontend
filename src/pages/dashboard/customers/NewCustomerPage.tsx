@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { InputField } from "../../../components/ui/InputField";
 import { useCreateCustomer } from "../../../hooks/useCustomers";
-import { getApiErrorMessage, getApiFieldErrors } from "../../../api/auth";
+import { getApiErrorMessage, getApiFieldErrors } from "../../../api/client";
 
 interface FormState {
   firstName: string;
@@ -38,6 +38,13 @@ const TIPS = [
 ];
 
 const PHONE_REGEX = /^7[0-9]{8}$/;
+
+function normalizeKenyanLocalPhone(input: string): string {
+  const digitsOnly = input.replace(/\D/g, "");
+  if (digitsOnly.startsWith("254")) return digitsOnly.slice(3);
+  if (digitsOnly.startsWith("0")) return digitsOnly.slice(1);
+  return digitsOnly;
+}
 
 function validate(form: FormState): Record<string, string> {
   const errors: Record<string, string> = {};
@@ -107,8 +114,7 @@ export default function NewCustomerPage() {
       set(field, e.target.value);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digitsOnly = e.target.value.replace(/\D/g, "");
-    set("phone", digitsOnly);
+    set("phone", normalizeKenyanLocalPhone(e.target.value));
   };
 
   const handleSubmit = async (e: FormEvent) => {

@@ -2,71 +2,11 @@ import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { usePaymentDetail, useConfirmPayment, useFailPayment } from "../../../hooks/usePayments";
 import { useAuth } from "../../../hooks/useAuth";
-import { getApiErrorMessage } from "../../../api/auth";
+import { getApiErrorMessage } from "../../../api/client";
 import { StatCard } from "../../../components/ui/StatCard";
+import { PaymentStatusBadge as StatusBadge, InvoiceStatusBadge } from "../../../components/ui/StatusBadge";
+import { MethodBadge } from "../../../components/ui/MethodBadge";
 import { formatKES, formatDate } from "../../../lib/format";
-import type { PaymentStatus } from "../../../types/payment";
-
-const STATUS_STYLES: Record<PaymentStatus, { bg: string; text: string; dot: string; label: string }> = {
-  confirmed: { bg: "bg-green-50 border-green-100", text: "text-green-700", dot: "bg-green-500", label: "Confirmed" },
-  pending: { bg: "bg-amber-50 border-amber-100", text: "text-amber-700", dot: "bg-amber-500", label: "Pending" },
-  failed: { bg: "bg-red-50 border-red-100", text: "text-red-600", dot: "bg-red-400", label: "Failed" },
-};
-
-function StatusBadge({ status, size = "md" }: { status: PaymentStatus; size?: "xs" | "sm" | "md" }) {
-  const s = STATUS_STYLES[status] ?? STATUS_STYLES.pending;
-  const sizeClasses =
-    size === "xs" ? "gap-1 px-1.5 py-0.5 text-[10px]" : size === "sm" ? "gap-1 px-2 py-0.5 text-xs" : "gap-1.5 px-3 py-1.5 text-sm";
-  const dotSize = size === "xs" ? "w-1 h-1" : size === "sm" ? "w-1.5 h-1.5" : "w-2 h-2";
-  return (
-    <span className={`inline-flex items-center rounded-full font-semibold border ${sizeClasses} ${s.bg} ${s.text}`}>
-      <span className={`rounded-full ${dotSize} ${s.dot}`} />
-      {s.label}
-    </span>
-  );
-}
-
-function MethodBadge({ method }: { method: string }) {
-  const colors: Record<string, string> = {
-    "M-Pesa": "bg-emerald-100 text-emerald-700",
-    M_PESA: "bg-emerald-100 text-emerald-700",
-    "Bank Transfer": "bg-blue-100 text-blue-700",
-    BANK: "bg-blue-100 text-blue-700",
-    Cash: "bg-gray-100 text-gray-700",
-    CASH: "bg-gray-100 text-gray-700",
-  };
-  return (
-    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${colors[method] || "bg-gray-100 text-gray-700"}`}>
-      {method}
-    </span>
-  );
-}
-
-const INVOICE_STATUS_STYLES: Record<string, { bg: string; text: string; dot: string; label: string }> = {
-  draft: { bg: "bg-gray-50 border-gray-200", text: "text-gray-600", dot: "bg-gray-400", label: "Draft" },
-  sent: { bg: "bg-blue-50 border-blue-100", text: "text-blue-700", dot: "bg-blue-500", label: "Sent" },
-  pending: { bg: "bg-amber-50 border-amber-100", text: "text-amber-700", dot: "bg-amber-500", label: "Pending" },
-  overdue: { bg: "bg-red-50 border-red-100", text: "text-red-600", dot: "bg-red-400", label: "Overdue" },
-  paid: { bg: "bg-green-50 border-green-100", text: "text-green-700", dot: "bg-green-500", label: "Paid" },
-};
-
-function InvoiceStatusBadge({ status, size = "sm" }: { status: string; size?: "xs" | "sm" | "md" }) {
-  const s = INVOICE_STATUS_STYLES[status.toLowerCase()] ?? {
-    bg: "bg-gray-100 border-gray-200",
-    text: "text-gray-500",
-    dot: "bg-gray-400",
-    label: status,
-  };
-  const sizeClasses =
-    size === "xs" ? "gap-1 px-1.5 py-0.5 text-[10px]" : size === "sm" ? "gap-1 px-2 py-0.5 text-xs" : "gap-1.5 px-3 py-1.5 text-sm";
-  const dotSize = size === "xs" ? "w-1 h-1" : size === "sm" ? "w-1.5 h-1.5" : "w-2 h-2";
-  return (
-    <span className={`inline-flex items-center rounded-full font-semibold border ${sizeClasses} ${s.bg} ${s.text}`}>
-      <span className={`rounded-full ${dotSize} ${s.dot}`} />
-      {s.label}
-    </span>
-  );
-}
 
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -326,7 +266,7 @@ export default function PaymentDetailPage() {
             />
             <StatCard
             label="Status"
-            value={STATUS_STYLES[payment.status]?.label ?? "Pending"}
+            value={payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
             iconBg={
               payment.status === "confirmed" ? "#ECFDF5" : payment.status === "failed" ? "#FEE2E2" : "#FEF3C7"
             }

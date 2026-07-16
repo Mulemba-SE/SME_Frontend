@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { InputField } from "../../../components/ui/InputField";
 import { invoicesApi } from "../../../api/invoices";
-import { getApiErrorMessage, getApiFieldErrors } from "../../../api/auth";
+import { getApiErrorMessage, getApiFieldErrors } from "../../../api/client";
 import { formatKES } from "../../../lib/format";
 import type { CreateInvoiceRequest, InvoiceCreateResponse } from "../../../types/invoice";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
