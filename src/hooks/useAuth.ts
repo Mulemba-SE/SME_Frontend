@@ -3,6 +3,8 @@ import { authApi } from "../api/auth";
 import { getApiErrorMessage, getApiFieldErrors } from "../api/client";
 import type { LoginRequest, RegisterRequest } from "../types/auth";
 
+const AUTH_HINT_KEY = "imarabill_has_session";
+
 export function useAuth() {
   const {
     user,
@@ -21,11 +23,12 @@ export function useAuth() {
     try {
       const res = await authApi.login(data);
       const userData = {
-  email: data.email,
-  firstName: res.firstName,
-  roles: res.roles,
-};
+        email: data.email,
+        firstName: res.firstName,
+        roles: res.roles,
+      };
       setAuth(userData);
+      localStorage.setItem(AUTH_HINT_KEY, "1");
       return { success: true };
     } catch (err) {
       const message = getApiErrorMessage(err, "Invalid email or password.");
@@ -42,11 +45,12 @@ export function useAuth() {
     try {
       const res = await authApi.register(data);
       const userData = {
-  email: data.email,
-  firstName: res.firstName,
-  roles: res.roles,
-};
+        email: data.email,
+        firstName: res.firstName,
+        roles: res.roles,
+      };
       setAuth(userData);
+      localStorage.setItem(AUTH_HINT_KEY, "1");
       return { success: true };
     } catch (err) {
       const fieldErrors = getApiFieldErrors(err);
@@ -58,38 +62,46 @@ export function useAuth() {
     }
   };
 
- const restoreSession = async () => {
-  setLoading(true);
-  try {
-    const res = await authApi.me();
-    setAuth({
-      email: res.email || res.phoneNumber || "",
-      firstName: res.firstName || res.lastName || "",
-      roles: res.roles,
-    });
-  } catch {
-    clearAuth();
-  } finally {
-    setLoading(false);
-  }
-};
+  const restoreSession = async () => {
+    // No hint of a prior session -> skip the /me round trip entirely.
+    if (!localStorage.getItem(AUTH_HINT_KEY)) {
+      clearAuth();
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await authApi.me();
+      setAuth({
+        email: res.email || res.phoneNumber || "",
+        firstName: res.firstName || res.lastName || "",
+        roles: res.roles,
+      });
+    } catch {
+      clearAuth();
+      localStorage.removeItem(AUTH_HINT_KEY);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const logout = async () => {
     try {
       await authApi.logout();
     } finally {
       clearAuth();
+      localStorage.removeItem(AUTH_HINT_KEY);
     }
   };
 
-  return { 
-    user, 
-    isAuthenticated, 
-    isLoading, 
-    error, 
-    login, 
-    register, 
+  return {
+    user,
+    isAuthenticated,
+    isLoading,
+    error,
+    login,
+    register,
     logout,
-    restoreSession
+    restoreSession,
   };
 }
