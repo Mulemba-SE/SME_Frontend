@@ -66,6 +66,21 @@ const navItems: NavItem[] = [
   },
 ];
 
+const managerOnlyNavItems: NavItem[] = [
+  {
+    to: "/dashboard/team",
+    label: "Team",
+    icon: (
+      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+        <path d="M20 21v-2a4 4 0 00-3-3.87" />
+        <path d="M16 3.13a4 4 0 010 7.75" />
+        <path d="M12 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+        <circle cx="8" cy="7" r="4" />
+      </svg>
+    ),
+  },
+];
+
 interface SidebarProps {
   mobileOpen?: boolean;
   onMobileClose?: () => void;
@@ -113,7 +128,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
-        {navItems.map((item) => (
+        {[...navItems, ...(user?.roles?.includes("MANAGER") ? managerOnlyNavItems : [])].map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

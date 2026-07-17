@@ -26,6 +26,10 @@ export const API = {
   DETAIL: "/payments/detailed-payment",
 },
 
+  ADMIN: {
+    USERS: "/admin/users",
+  },
+
   REPORTS: {
     SUMMARY: "/reports/summary",
     OVERDUE_SUMMARY: "/reports/overdue-summary",

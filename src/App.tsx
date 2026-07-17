@@ -12,6 +12,8 @@ import PaymentsPage from './pages/dashboard/payments/PaymentsPage'
 import NewPaymentPage from './pages/dashboard/payments/NewPaymentPage'
 import PaymentDetailPage from './pages/dashboard/payments/PaymentDetailPage'
 import ReportsPage from './pages/dashboard/ReportsPage'
+import UsersPage from './pages/dashboard/team/UsersPage'
+import NewUserPage from './pages/dashboard/team/NewUserPage'
 
 import DashboardLayout from './components/layout/DashboardLayout'
 import ProtectedRoute from './components/layout/ProtectedRoute'
@@ -64,6 +66,22 @@ function AppRoutes() {
         <Route path="payments/new" element={<NewPaymentPage />} />
         <Route path="payments/:paymentNo" element={<PaymentDetailPage />} />
         <Route path="reports" element={<ReportsPage />} />
+        <Route
+          path="team"
+          element={
+            <ProtectedRoute allowedRoles={["MANAGER"]}>
+              <UsersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="team/new"
+          element={
+            <ProtectedRoute allowedRoles={["MANAGER"]}>
+              <NewUserPage />
+            </ProtectedRoute>
+          }
+        />
       </Route>
 
       <Route path="*" element={<Navigate to="/auth" replace />} />
