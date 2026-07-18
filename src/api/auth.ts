@@ -1,6 +1,6 @@
 import { api } from "./client";
 import { API } from "./endpoints";
-import type { LoginRequest, RegisterRequest, AuthResponse, MeResponse } from "../types/auth";
+import type { LoginRequest, RegisterRequest, ChangePasswordRequest, AuthResponse, MeResponse } from "../types/auth";
 
 export const authApi = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
@@ -15,6 +15,10 @@ export const authApi = {
 
   logout: async (): Promise<void> => {
     await api.post(API.AUTH.LOGOUT);
+  },
+
+  changePassword: async (data: ChangePasswordRequest): Promise<void> => {
+    await api.post(API.AUTH.CHANGE_PASSWORD, data);
   },
 
   // Important: Backend uses /me

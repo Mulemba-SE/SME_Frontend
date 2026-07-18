@@ -3,11 +3,13 @@ export interface User {
   firstName: string;
   lastName?: string;
   roles: string[];
+  mustChangePassword?: boolean;
 }
 
 export interface AuthResponse {
   firstName: string;
   roles: string[];
+  mustChangePassword?: boolean;
 }
 
 export interface MeResponse extends User {
@@ -27,4 +29,9 @@ export interface RegisterRequest {
   email: string;
   password: string;
   phoneNumber: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AuthPage from './pages/auth/AuthPage'
+import ChangePasswordPage from './pages/auth/ChangePasswordPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import CustomersPage from './pages/dashboard/customers/CustomersPage'
 import NewCustomerPage from './pages/dashboard/customers/NewCustomerPage'
@@ -45,6 +46,16 @@ function AppRoutes() {
 
       {/* Public */}
       <Route path="/auth" element={<AuthPage />} />
+
+      {/* Protected, standalone (no dashboard chrome) */}
+      <Route
+        path="/change-password"
+        element={
+          <ProtectedRoute>
+            <ChangePasswordPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Protected */}
       <Route

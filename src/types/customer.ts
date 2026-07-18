@@ -13,14 +13,6 @@ export interface Customer {
   dueDate?: string | null;
 }
 
-export interface CreateCustomerRequest {
-  firstName: string;
-  lastName: string;
-  email?: string;
-  phoneCountryCode?: string;
-  phone?: string;
-}
-
 export interface CustomerListParams {
   search?: string;
   searchBy?: "email" | "userNo" | "phoneNumber" | "dueDate";

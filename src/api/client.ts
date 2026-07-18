@@ -19,6 +19,13 @@ api.interceptors.response.use(
     const errorCode = data?.errorCode;
     const fieldErrors = data?.errors as Record<string, string> | undefined;
 
+    if (
+      errorCode === "PASSWORD_CHANGE_REQUIRED" &&
+      window.location.pathname !== "/change-password"
+    ) {
+      window.location.href = "/change-password";
+    }
+
     if (errorCode === "VALIDATION_ERROR" && fieldErrors) {
       const firstMessage = Object.values(fieldErrors)[0] ?? "Please check the form for errors.";
       const apiError: ApiError = Object.assign(new Error(firstMessage), {

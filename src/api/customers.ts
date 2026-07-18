@@ -2,7 +2,6 @@ import { api } from "./client";
 import { API } from "./endpoints";
 import type {
   Customer,
-  CreateCustomerRequest,
   CustomerListParams,
   CustomerListResponse,
   CustomerStats,
@@ -57,21 +56,6 @@ export const customersApi = {
   getByUserNo: async (userNo: string | number): Promise<Customer> => {
     const res = await api.get<Partial<Customer>>(`${API.CUSTOMERS.DETAIL}/${userNo}`);
     return normalizeCustomer(res.data);
-  },
-
-  create: async (input: CreateCustomerRequest): Promise<Customer> => {
-    const payload = {
-      firstName: input.firstName,
-      lastName: input.lastName,
-      email: input.email,
-      phoneNumber: input.phone 
-        ? `${input.phoneCountryCode || "+254"}${input.phone}`.trim() //concatenate the country code and phone number, defaulting to +254 if not provided
-        : undefined,
-      password: crypto.randomUUID(), // temporary — manager-created customers
-    };
-
-    const res = await api.post<Customer>(API.CUSTOMERS.CREATE, payload);
-    return res.data;
   },
 
   stats: async (): Promise<CustomerStats> => {

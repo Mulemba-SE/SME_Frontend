@@ -3,12 +3,12 @@ export const API = {
     LOGIN: "/auth/login",
     REGISTER: "/auth/register",
     LOGOUT: "/auth/logout",
+    CHANGE_PASSWORD: "/auth/change-password",
     ME: "/me",                  
   },
 
   CUSTOMERS: {
     LIST: "/customer",
-    CREATE: "/customer/register",
     STATS: "/customer/dashboard",
     DETAIL: "/customer",
   },

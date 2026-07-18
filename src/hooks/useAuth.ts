@@ -1,7 +1,7 @@
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/auth";
 import { getApiErrorMessage, getApiFieldErrors } from "../api/client";
-import type { LoginRequest, RegisterRequest } from "../types/auth";
+import type { ChangePasswordRequest, LoginRequest, RegisterRequest } from "../types/auth";
 
 const AUTH_HINT_KEY = "imarabill_has_session";
 
@@ -26,6 +26,7 @@ export function useAuth() {
         email: data.email,
         firstName: res.firstName,
         roles: res.roles,
+        mustChangePassword: res.mustChangePassword,
       };
       setAuth(userData);
       localStorage.setItem(AUTH_HINT_KEY, "1");
@@ -48,6 +49,7 @@ export function useAuth() {
         email: data.email,
         firstName: res.firstName,
         roles: res.roles,
+        mustChangePassword: res.mustChangePassword,
       };
       setAuth(userData);
       localStorage.setItem(AUTH_HINT_KEY, "1");
@@ -76,6 +78,7 @@ export function useAuth() {
         email: res.email || res.phoneNumber || "",
         firstName: res.firstName || res.lastName || "",
         roles: res.roles,
+        mustChangePassword: res.mustChangePassword,
       });
     } catch {
       clearAuth();
@@ -94,6 +97,24 @@ export function useAuth() {
     }
   };
 
+  const changePassword = async (data: ChangePasswordRequest) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await authApi.changePassword(data);
+      if (user) {
+        setAuth({ ...user, mustChangePassword: false });
+      }
+      return { success: true };
+    } catch (err) {
+      const message = getApiErrorMessage(err, "Could not change password. Please try again.");
+      setError(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     user,
     isAuthenticated,
@@ -103,5 +124,6 @@ export function useAuth() {
     register,
     logout,
     restoreSession,
+    changePassword,
   };
 }

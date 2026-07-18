@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { InputField } from "../../../components/ui/InputField";
-import { useCreateCustomer } from "../../../hooks/useCustomers";
+import { useCreateAdminUser } from "../../../hooks/useAdminUsers";
 import { getApiErrorMessage, getApiFieldErrors } from "../../../api/client";
 
 interface FormState {
@@ -51,7 +51,9 @@ function validate(form: FormState): Record<string, string> {
 
   if (!form.firstName.trim()) errors.firstName = "First name is required.";
 
-  if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+  if (!form.email.trim()) {
+    errors.email = "Email is required to send login credentials.";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
     errors.email = "Enter a valid email address.";
   }
 
@@ -92,7 +94,7 @@ function CheckIcon() {
 
 export default function NewCustomerPage() {
   const navigate = useNavigate();
-  const createCustomer = useCreateCustomer();
+  const createCustomer = useCreateAdminUser();
 
   const [form, setForm] = useState<FormState>(initialForm);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -130,10 +132,12 @@ export default function NewCustomerPage() {
     try {
       await createCustomer.mutateAsync({
         firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        email: form.email.trim() || undefined,
-        phoneCountryCode: form.phoneCountryCode,
-        phone: form.phone.trim() || undefined,
+        lastName: form.lastName.trim() || undefined,
+        email: form.email.trim(),
+        phoneNumber: form.phone.trim()
+          ? `${form.phoneCountryCode}${form.phone.trim()}`
+          : undefined,
+        role: "CUSTOMER",
       });
       navigate("/dashboard/customers");
     } catch (err) {
@@ -211,6 +215,7 @@ export default function NewCustomerPage() {
                 <InputField
                   label="Email Address"
                   type="email"
+                  required
                   placeholder="Enter email address"
                   value={form.email}
                   onChange={handleChange("email")}
