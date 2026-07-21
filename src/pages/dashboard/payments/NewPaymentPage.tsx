@@ -98,6 +98,8 @@ export default function NewPaymentPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const createPayment = useCreatePayment();
+  const isInvoiceLocked = Boolean(searchParams.get("invoiceNo"));
+  const isCustomerLocked = Boolean(searchParams.get("customerNo"));
 
   const [form, setForm] = useState<FormState>({
     customerNo: searchParams.get("customerNo") ?? "",
@@ -107,6 +109,8 @@ export default function NewPaymentPage() {
     transactionRef: "",
     notes: "",
   });
+
+  
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -211,26 +215,45 @@ export default function NewPaymentPage() {
             <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6">
               <h2 className="text-base font-semibold text-gray-900 mb-4">Payment Details</h2>
               <div className="grid sm:grid-cols-2 gap-4">
-                <InputField
-                  label="Customer No"
-                  required
-                  inputMode="numeric"
-                  placeholder="Enter customer No"
-                  value={form.customerNo}
-                  onChange={handleNumberChange("customerNo")}
-                  error={fieldErrors.customerNo}
-                  autoFocus={!form.customerNo}
-                />
-                <InputField
-                  label="Invoice No"
-                  required
-                  inputMode="numeric"
-                  placeholder="Enter invoice No"
-                  value={form.invoiceNo}
-                  onChange={handleNumberChange("invoiceNo")}
-                  error={fieldErrors.invoiceNo}
-                  autoFocus={Boolean(form.customerNo) && !form.invoiceNo}
-                />
+                {isCustomerLocked ? (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-gray-700">Customer No</label>
+                  <div className="px-3 py-2.5 text-sm rounded-lg border border-gray-200 bg-gray-50 text-gray-700 font-medium">
+                    {form.customerNo}
+                  </div>
+                </div>
+              ) : (
+                  <InputField
+                    label="Customer No"
+                    required
+                    inputMode="numeric"
+                    placeholder="Enter customer No"
+                    value={form.customerNo}
+                    onChange={handleNumberChange("customerNo")}
+                    error={fieldErrors.customerNo}
+                    autoFocus={!form.customerNo}
+                  />
+                )}
+                {isInvoiceLocked ? (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-gray-700">Invoice No</label>
+                    <div className="px-3 py-2.5 text-sm rounded-lg border border-gray-200 bg-gray-50 text-gray-700 font-medium">
+                      {form.invoiceNo}
+                    </div>
+                  </div>
+                ) : (
+                  <InputField
+                    label="Invoice No"
+                    required
+                    inputMode="numeric"
+                    placeholder="Enter invoice No"
+                    value={form.invoiceNo}
+                    onChange={handleNumberChange("invoiceNo")}
+                    error={fieldErrors.invoiceNo}
+                    autoFocus={Boolean(form.customerNo) && !form.invoiceNo}
+                  />
+                )}
+               
                 <InputField
                   label="Amount"
                   required

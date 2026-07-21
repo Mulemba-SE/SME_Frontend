@@ -353,7 +353,8 @@ export default function InvoicesPage() {
         >
           <option value="all">All Status</option>
           <option value="PAID">Paid</option>
-          <option value="PENDING">Sent</option>
+          <option value="SENT">Sent</option>
+          <option value="PENDING">Pending</option>
           <option value="OVERDUE">Overdue</option>
           <option value="DRAFT">Draft</option>
         </select>

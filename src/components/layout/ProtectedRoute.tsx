@@ -21,7 +21,16 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
   }
 
   if (allowedRoles && !allowedRoles.some((role) => user?.roles?.includes(role))) {
-    return <Navigate to="/dashboard" replace />;
+    return (
+      <div className="p-6 sm:p-8">
+        <div className="max-w-xl rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <p className="text-sm font-semibold text-gray-900">You do not have access to this page.</p>
+          <p className="mt-1 text-sm text-gray-500">
+            Your account role does not include permission for this section.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

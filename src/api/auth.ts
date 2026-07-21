@@ -21,6 +21,11 @@ export const authApi = {
     await api.post(API.AUTH.CHANGE_PASSWORD, data);
   },
 
+  oneTimeLogin: async (token: string): Promise<AuthResponse> => {
+    const res = await api.post<AuthResponse>(API.AUTH.ONE_TIME_LOGIN, { token });
+    return res.data;
+  },
+
   // Important: Backend uses /me
   me: async (): Promise<MeResponse> => {
     const res = await api.get<MeResponse>(API.AUTH.ME);

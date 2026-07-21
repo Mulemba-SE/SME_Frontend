@@ -91,14 +91,12 @@ export default function CustomerDetailPage() {
     customer?.email ||
     "—";
 
-  const latestInvoiceNumber = latestInvoice?.invoiceNo != null
-    ? `INV-${String(latestInvoice.invoiceNo).padStart(7, "0")}`
-    : customer?.invoiceNo != null
-      ? `INV-${String(customer.invoiceNo).padStart(7, "0")}`
-      : "—";
+const latestInvoiceNumber = latestInvoice?.invoiceNo != null
+  ? `INV-${String(latestInvoice.invoiceNo).padStart(7, "0")}`
+  : "—";
 
-  const latestInvoiceDate = latestInvoice?.dueDate ?? customer?.dueDate ?? null;
-  const latestInvoiceStatus = latestInvoice?.status ?? customer?.status ?? "—";
+const latestInvoiceDate = latestInvoice?.dueDate ?? null;
+const latestInvoiceStatus = latestInvoice?.status ?? "—";
 
   if (isCustomerLoading || isInvoicesLoading) return <Skeleton />;
   if (isCustomerError || isInvoicesError) return <ErrorState userNo={userNo ?? ""} />;

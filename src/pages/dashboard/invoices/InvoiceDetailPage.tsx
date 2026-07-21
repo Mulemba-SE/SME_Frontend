@@ -1,8 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { invoicesApi } from "../../../api/invoices";
 import { getApiErrorMessage } from "../../../api/client";
+import { useSendInvoiceConfirmation } from "../../../hooks/useInvoices";
 import { usePayments } from "../../../hooks/usePayments";
 import { StatCard } from "../../../components/ui/StatCard";
 import { InvoiceStatusBadge as StatusBadge, PaymentStatusBadge } from "../../../components/ui/StatusBadge";
@@ -110,6 +111,7 @@ function TimelineStep({
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const invoiceNo = Number(id);
+  const sendInvoiceConfirmation = useSendInvoiceConfirmation();
 
   const { data: invoice, isLoading, isError, error } = useQuery<InvoiceDetailView | null, Error>({
     queryKey: ["invoice-detail", invoiceNo],
@@ -127,7 +129,7 @@ export default function InvoiceDetailPage() {
         invoiceNo: summary.invoiceNo,
         customerNo: summary.customerNo,
       });
-
+      
       return {
         ...summary,
         status: detail.status || summary.status,
@@ -140,6 +142,24 @@ export default function InvoiceDetailPage() {
     enabled: Boolean(id),
   });
 
+ const [isSending, setIsSending] = useState(false);
+
+const handleSendInvoiceConfirmation = async () => {
+  if (!invoice?.invoiceNo) return;
+  if (invoice.status?.toLowerCase() !== "draft") return;
+  if (isSending) return;
+
+  setIsSending(true);
+  try {
+    await sendInvoiceConfirmation.mutateAsync(invoice.invoiceNo);
+  } catch (error) {
+    console.error(error);
+    
+  } finally {
+    setIsSending(false);
+  }
+};
+  
   const invoiceTotal = invoice?.invoiceTotal ?? 0;
   const amountPaid = invoice?.amountPaid ?? 0;
   const outstanding = Math.max(0, invoiceTotal - amountPaid);
@@ -166,13 +186,30 @@ export default function InvoiceDetailPage() {
     isError: isPaymentsError,
   } = usePayments({ invoiceNo, page: 1, limit: 20 });
 
+const isSentDone = Boolean(invoice?.status && invoice.status.toLowerCase() !== "draft");
+const isPendingDone = Boolean(
+  invoice?.status && ["pending", "overdue", "paid"].includes(invoice.status.toLowerCase())
+);
+const isPaidDone = invoice?.status?.toLowerCase() === "paid";
+
+const paidDate = useMemo(() => {
+  if (!isPaidDone || !payments || payments.length === 0) return null;
+  const latest = payments.reduce((latest, p) =>
+    new Date(p.paymentAt).getTime() > new Date(latest.paymentAt).getTime() ? p : latest
+  );
+  return latest.paymentAt;
+}, [isPaidDone, payments]);
+
+
   if (isLoading) return <TableSkeleton />;
 
   if (isError || !invoice) {
+    
     return <InlineError message={getApiErrorMessage(error, "Invoice not found. Please check the number and try again.")} />;
   }
 
   const invoiceLabel = `INV-${String(invoice.invoiceNo).padStart(7, "0")}`;
+  console.log("invoice.status:", invoice.status);
   const recordPaymentHref =
     invoice.invoiceNo != null && invoice.customerNo != null
       ? `/dashboard/payments/new?invoiceNo=${invoice.invoiceNo}&customerNo=${invoice.customerNo}&amount=${outstanding || ""}`
@@ -223,12 +260,16 @@ export default function InvoiceDetailPage() {
               <span className="text-sm">Back</span>
             </Link>
             <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-              <Link
-                to={recordPaymentHref}
-                aria-label="Record payment"
-                title="Record payment"
-                className="inline-flex h-9 w-11 shrink-0 items-center justify-center rounded-lg border border-white/30 bg-white/10 text-white transition-colors hover:bg-white/20"
-              >
+             <Link
+              to={isPaidDone ? "#" : recordPaymentHref}
+              aria-label="Record payment"
+              title={isPaidDone ? "Invoice is already fully paid" : "Record payment"}
+              onClick={(e) => { if (isPaidDone) e.preventDefault(); }}
+              aria-disabled={isPaidDone}
+              className={`inline-flex h-9 w-11 shrink-0 items-center justify-center rounded-lg border border-white/30 bg-white/10 text-white transition-colors ${
+                isPaidDone ? "cursor-not-allowed opacity-50" : "hover:bg-white/20"
+              }`}
+            >
                 <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
                   <rect x="3" y="5" width="18" height="14" rx="2" />
                   <path d="M3 10h18" />
@@ -249,15 +290,25 @@ export default function InvoiceDetailPage() {
               </button>
               <button
                 type="button"
-                disabled
-                title="Coming soon"
-                aria-label="Send invoice"
-                className="inline-flex h-9 w-11 shrink-0 cursor-not-allowed items-center justify-center rounded-lg border border-white/30 bg-white/10 text-white opacity-70"
+                disabled={invoice.status?.toLowerCase() !== "draft" || isSending}
+                onClick={handleSendInvoiceConfirmation}
+                title={invoice.status?.toLowerCase() === "draft" 
+                  ? "Send invoice confirmation" 
+                  : "Invoice has already been sent"}
+                className={`inline-flex h-9 w-11 shrink-0 items-center justify-center rounded-lg border border-white/30 bg-white/10 text-white transition-colors ${
+                  (invoice.status?.toLowerCase() !== "draft" || isSending) 
+                    ? "cursor-not-allowed opacity-50" 
+                    : "hover:bg-white/20"
+                }`}
               >
-                <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                  <path d="M22 2 11 13" />
-                  <path d="m22 2-7 20-4-9-9-4 20-7z" />
-                </svg>
+                {isSending ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <path d="M22 2 11 13" />
+                    <path d="m22 2-7 20-4-9-9-4 20-7z" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>
@@ -372,7 +423,7 @@ export default function InvoiceDetailPage() {
                 <DetailRow label="Invoice Total" value={formatKES(invoiceTotal)} />
                 <DetailRow label="Amount Paid" value={<span className="text-green-600">{formatKES(amountPaid)}</span>} />
                 <DetailRow label="Outstanding" value={<span className="text-red-600">{formatKES(outstanding)}</span>} />
-                <DetailRow label="Payment Status" value={<StatusBadge status={invoice.status} />} />
+                <DetailRow label="Invoice Status" value={<StatusBadge status={invoice.status} />} />
               </div>
             </div>
 
@@ -423,62 +474,51 @@ export default function InvoiceDetailPage() {
           <div className="bg-white border border-gray-100 rounded-3xl shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-6">Invoice Timeline</h2>
             <div className="flex items-start">
-              <TimelineStep
-                label="Created"
-                date={invoice.createdAt ? formatDate(invoice.createdAt) : "—"}
-                state="done"
-                icon={
-                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                }
-              />
-              <TimelineStep
-                label="Sent"
-                date={null}
-                state="pending"
-                icon={
-                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                    <rect x="2" y="4" width="20" height="16" rx="2" />
-                    <path d="m2 6 10 7 10-7" />
-                  </svg>
-                }
-              />
-              <TimelineStep
-                label="Viewed"
-                date={null}
-                state="pending"
-                icon={
-                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                }
-              />
-              <TimelineStep
-                label="Reminder Sent"
-                date={null}
-                state="pending"
-                icon={
-                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                    <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-                    <path d="M13.73 21a2 2 0 01-3.46 0" />
-                  </svg>
-                }
-              />
-              <TimelineStep
-                label="Paid"
-                date={null}
-                state="pending"
-                isLast
-                icon={
-                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                }
-              />
-            </div>
+  <TimelineStep
+    label="Created"
+    date={invoice.createdAt ? formatDate(invoice.createdAt) : "—"}
+    state="done"
+    icon={
+      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+    }
+  />
+ <TimelineStep
+  label="Sent"
+  date={null}
+  state={isSentDone ? "done" : "pending"}
+  icon={
+    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="m2 6 10 7 10-7" />
+    </svg>
+  }
+/>
+<TimelineStep
+  label="Pending"
+  date={null}
+  state={isPendingDone ? "done" : "pending"}
+  icon={
+    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  }
+/>
+<TimelineStep
+  label="Paid"
+  date={paidDate ? formatDate(paidDate) : null}
+  state={isPaidDone ? "done" : "pending"}
+  isLast
+  icon={
+    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  }
+/>
+</div>
           </div>
         </div>
       </div>

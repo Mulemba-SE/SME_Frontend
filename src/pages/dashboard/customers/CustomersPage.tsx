@@ -5,14 +5,11 @@ import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
 import { getApiErrorMessage } from "../../../api/client";
 import { StatCard } from "../../../components/ui/StatCard";
 import { Pagination } from "../../../components/ui/Pagination";
-import { InvoiceStatusBadge as StatusBadge } from "../../../components/ui/StatusBadge";
 import { Avatar } from "../../../components/ui/Avatar";
-import { formatKES, formatDate } from "../../../lib/format";
+import { formatKES } from "../../../lib/format";
 import type { Customer } from "../../../types/customer";
 
-type InvoiceStatus = "paid" | "pending" | "overdue" | "draft";
-
-type SearchBy = "email" | "userNo" | "phoneNumber" | "dueDate";
+type SearchBy = "email" | "userNo" | "phoneNumber";
 
 const PAGE_SIZE = 8;
 
@@ -32,9 +29,6 @@ function TableSkeleton() {
           </td>
           <td className="px-4 py-3.5"><div className="h-3 bg-gray-100 rounded w-32" /></td>
           <td className="px-4 py-3.5"><div className="h-3 bg-gray-100 rounded w-24" /></td>
-          <td className="px-4 py-3.5"><div className="h-3 bg-gray-100 rounded w-16" /></td>
-          <td className="px-4 py-3.5"><div className="h-5 bg-gray-100 rounded-full w-14" /></td>
-          <td className="px-4 py-3.5"><div className="h-3 bg-gray-100 rounded w-20" /></td>
         </tr>
       ))}
     </tbody>
@@ -87,14 +81,8 @@ function InlineError({ message }: { message: string }) {
   );
 }
 
-function deriveRow(c: Customer) {
-  return { totalDue: c.total != null ? Number(c.total) : undefined };
-}
-
 function getCustomerRowKey(customer: Customer) {
-  const userNo = customer.userNo != null ? String(customer.userNo) : "unknown";
-  const invoiceNo = customer.invoiceNo != null ? String(customer.invoiceNo) : "none";
-  return `${userNo}-${invoiceNo}`;
+  return customer.userNo != null ? String(customer.userNo) : "unknown";
 }
 
 function CustomerRow({
@@ -106,7 +94,6 @@ function CustomerRow({
   selected: boolean;
   onToggle: () => void;
 }) {
-  const { totalDue } = deriveRow(customer);
   const customerName = [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email || "Customer";
 
   return (
@@ -120,36 +107,20 @@ function CustomerRow({
         />
       </td>
       <td className="px-4 py-3.5">
-        <div className="flex items-center gap-3">
-          <Avatar name={customerName} size="table" />
-          <div>
-            <Link
-              to={`/dashboard/customers/${customer.userNo}`}
-              className="font-semibold text-blue-600 hover:text-blue-700 text-sm block"
-            >
-              {customer.userNo || "—"}
-            </Link>
-          </div>
-        </div>
-      </td>
-      <td className="px-4 py-3.5 text-sm text-gray-500">{customer.email || "—"}</td>
-      <td className="px-4 py-3.5 text-sm text-gray-500">{customer.phoneNumber || "—"}</td>
-      <td className="px-4 py-3.5 text-sm text-gray-500">{customer.invoiceNo ?? "—"}</td>
-      <td className="px-4 py-3.5 text-sm font-semibold whitespace-nowrap">
-        {totalDue == null ? (
-          <span className="text-sm text-gray-500">—</span>
-        ) : totalDue === 0 ? (
-          <span className="text-green-600">Paid</span>
-        ) : (
-          <span className="text-gray-800">{formatKES(totalDue)}</span>
-        )}
-      </td>
-      <td className="px-4 py-3.5 whitespace-nowrap">
-        <StatusBadge status={customer.status ?? "—"} />
-      </td>
-      <td className="px-4 py-3.5 text-sm text-gray-500 whitespace-nowrap">
-        {customer.dueDate ? formatDate(customer.dueDate) : "—"}
-      </td>
+      <div className="flex items-center gap-3">
+        <Avatar name={customerName} size="table" />
+        <Link
+          to={`/dashboard/customers/${customer.userNo}`}
+          className="font-semibold text-blue-600 hover:text-blue-700 text-sm"
+        >
+          {customer.userNo || "—"}
+        </Link>
+      </div>
+    </td>
+    <td className="px-4 py-3.5 text-sm text-gray-700">{customer.firstName || "—"}</td>
+    <td className="px-4 py-3.5 text-sm text-gray-700">{customer.lastName || "—"}</td>
+    <td className="px-4 py-3.5 text-sm text-gray-500">{customer.email || "—"}</td>
+    <td className="px-4 py-3.5 text-sm text-gray-500">{customer.phoneNumber || "—"}</td>
     </tr>
   );
 }
@@ -158,7 +129,6 @@ function CustomerRow({
 export default function CustomersPage() {
   const [searchInput, setSearchInput] = useState("");
   const [searchBy, setSearchBy] = useState<SearchBy>("email");
-  const [status, setStatus] = useState<InvoiceStatus | "all">("all");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -168,14 +138,11 @@ export default function CustomersPage() {
       ? "Search customers by email..."
       : searchBy === "userNo"
       ? "Search customers by user number..."
-      : searchBy === "phoneNumber"
-      ? "Search customers by phone number..."
-      : "Search customers by due date (YYYY-MM-DD)...";
+      : "Search customers by phone number...";
 
   const { data, isLoading, isError, error, isFetching } = useCustomers({
     search,
     searchBy,
-    status,
     page,
     limit: PAGE_SIZE,
   });
@@ -245,11 +212,6 @@ export default function CustomersPage() {
 
   const handleSearchChange = (value: string) => {
     setSearchInput(value);
-    setPage(1);
-  };
-
-  const handleStatusChange = (value: InvoiceStatus | "all") => {
-    setStatus(value);
     setPage(1);
   };
 
@@ -367,20 +329,6 @@ export default function CustomersPage() {
           <option value="email">Email</option>
           <option value="userNo">Customer no</option>
           <option value="phoneNumber">Phone number</option>
-          <option value="dueDate">Due date</option>
-        </select>
-
-        <select
-          value={status}
-          onChange={(e) => handleStatusChange(e.target.value as InvoiceStatus | "all")}
-          className="px-3 py-2.5 text-sm border border-gray-200 bg-white rounded-xl outline-none text-gray-700
-            focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all sm:w-36"
-        >
-          <option value="all">All Status</option>
-          <option value="draft">Draft</option>
-          <option value="paid">Paid</option>
-          <option value="pending">Pending</option>
-          <option value="overdue">Overdue</option>
         </select>
 
         <button className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 bg-white rounded-xl text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors">
@@ -403,11 +351,10 @@ export default function CustomersPage() {
                 <tr className="border-b border-gray-100 text-left">
                   <th className="px-4 py-3 w-10" />
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">First Name</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Last Name</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Phone</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Due</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Due Date</th>
                 </tr>
               </thead>
               <TableSkeleton />
@@ -416,7 +363,7 @@ export default function CustomersPage() {
         ) : isError ? (
           <InlineError message={getApiErrorMessage(error, "Couldn't load customers. Please try again.")} />
         ) : customers.length === 0 ? (
-          <InlineEmpty hasFilters={Boolean(search) || status !== "all"} />
+          <InlineEmpty hasFilters={Boolean(search)} />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -432,12 +379,10 @@ export default function CustomersPage() {
                       />
                     </th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">First Name</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Last Name</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Phone</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">InvoiceNo</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Due</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Due Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">

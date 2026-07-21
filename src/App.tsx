@@ -22,6 +22,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 
 const qc = new QueryClient()
+const operationalRoles = ["MANAGER", "STAFF"]
 
 // Separate inner component so it sits inside the providers
 function AppRoutes() {
@@ -66,17 +67,94 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<DashboardPage />} />
-        <Route path="customers" element={<CustomersPage />} />
-        <Route path="customers/new" element={<NewCustomerPage />} />
-        <Route path="customers/:userNo" element={<CustomerDetailPage />} />
-        <Route path="invoices" element={<InvoicesPage />} />
-        <Route path="invoices/new" element={<NewInvoicePage />} />
-        <Route path="invoices/:id" element={<InvoiceDetailPage />} />
-        <Route path="payments" element={<PaymentsPage />} />
-        <Route path="payments/new" element={<NewPaymentPage />} />
-        <Route path="payments/:paymentNo" element={<PaymentDetailPage />} />
-        <Route path="reports" element={<ReportsPage />} />
+        <Route
+          index
+          element={
+            <ProtectedRoute allowedRoles={operationalRoles}>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="customers"
+          element={
+            <ProtectedRoute allowedRoles={operationalRoles}>
+              <CustomersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="customers/new"
+          element={
+            <ProtectedRoute allowedRoles={operationalRoles}>
+              <NewCustomerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="customers/:userNo"
+          element={
+            <ProtectedRoute allowedRoles={operationalRoles}>
+              <CustomerDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="invoices"
+          element={
+            <ProtectedRoute allowedRoles={operationalRoles}>
+              <InvoicesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="invoices/new"
+          element={
+            <ProtectedRoute allowedRoles={operationalRoles}>
+              <NewInvoicePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="invoices/:id"
+          element={
+            <ProtectedRoute allowedRoles={operationalRoles}>
+              <InvoiceDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="payments"
+          element={
+            <ProtectedRoute allowedRoles={operationalRoles}>
+              <PaymentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="payments/new"
+          element={
+            <ProtectedRoute allowedRoles={operationalRoles}>
+              <NewPaymentPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="payments/:paymentNo"
+          element={
+            <ProtectedRoute allowedRoles={operationalRoles}>
+              <PaymentDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="reports"
+          element={
+            <ProtectedRoute allowedRoles={["MANAGER"]}>
+              <ReportsPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="team"
           element={

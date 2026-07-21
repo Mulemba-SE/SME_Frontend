@@ -40,7 +40,7 @@ export default function ChangePasswordPage() {
     e.preventDefault();
     setFormError(null);
 
-    const currentErr = form.currentPassword ? "" : "Current password is required.";
+    const currentErr = forced ? "" : form.currentPassword ? "" : "Current password is required.";
     const newErr = validateNewPassword(form.newPassword);
     const confirmErr =
       form.confirmPassword !== form.newPassword ? "Passwords do not match." : "";
@@ -83,16 +83,18 @@ export default function ChangePasswordPage() {
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <InputField
-            label="Current Password"
-            isPassword
-            required
-            placeholder="Enter your current password"
-            value={form.currentPassword}
-            onChange={set("currentPassword")}
-            error={errors.currentPassword}
-            autoComplete="current-password"
-          />
+          {!forced && (
+            <InputField
+              label="Current Password"
+              isPassword
+              required
+              placeholder="Enter your current password"
+              value={form.currentPassword}
+              onChange={set("currentPassword")}
+              error={errors.currentPassword}
+              autoComplete="current-password"
+            />
+          )}
           <InputField
             label="New Password"
             isPassword

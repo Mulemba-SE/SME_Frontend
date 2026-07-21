@@ -94,4 +94,8 @@ export const invoicesApi = {
     return res.data;
   },
 
+  sendInvoiceConfirmation: async (invoiceNo: number): Promise<void> => {
+  await api.patch(`${API.INVOICES.SEND_CONFIRMATION}/${invoiceNo}/send-invoice-confirmation`);
+  },
+
 };

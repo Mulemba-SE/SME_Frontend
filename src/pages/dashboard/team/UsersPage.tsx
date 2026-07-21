@@ -64,7 +64,7 @@ export default function UsersPage() {
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Team</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage Manager, Staff, and Customer accounts.</p>
+          <p className="text-sm text-gray-500 mt-1">Manage Manager and Staff accounts.</p>
         </div>
 
         <Link
@@ -125,7 +125,7 @@ export default function UsersPage() {
             {!isLoading && (users ?? []).length === 0 && (
               <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
                 <p className="text-sm font-semibold text-gray-900 mb-1">No team members yet</p>
-                <p className="text-sm text-gray-500">Add your first Manager, Staff, or Customer account.</p>
+                <p className="text-sm text-gray-500">Add your first Manager or Staff account.</p>
               </div>
             )}
           </div>

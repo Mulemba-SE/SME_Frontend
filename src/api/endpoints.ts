@@ -4,6 +4,7 @@ export const API = {
     REGISTER: "/auth/register",
     LOGOUT: "/auth/logout",
     CHANGE_PASSWORD: "/auth/change-password",
+    ONE_TIME_LOGIN: "/auth/one-time-login",
     ME: "/me",                  
   },
 
@@ -18,6 +19,7 @@ export const API = {
     CREATE: "/invoices",
     STATS: "/invoices/dashboard",
     DETAIL: "/invoices/detailed-invoice",
+    SEND_CONFIRMATION: "/invoices",
   },
 
   PAYMENTS: {

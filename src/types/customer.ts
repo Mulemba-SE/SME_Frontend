@@ -5,18 +5,11 @@ export interface Customer {
   lastName?: string;
   email?: string;
   phoneNumber?: string | null;
-  invoiceNo?: number | null;
-  status?: string | null;
-  total?: number | null;
-  totalTax?: number | null;
-  amountPaid?: number | null;
-  dueDate?: string | null;
 }
 
 export interface CustomerListParams {
   search?: string;
-  searchBy?: "email" | "userNo" | "phoneNumber" | "dueDate";
-  status?: "paid" | "pending" | "overdue" | "draft" | "all";
+  searchBy?: "email" | "userNo" | "phoneNumber";
   page?: number;
   limit?: number;
 }

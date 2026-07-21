@@ -5,12 +5,14 @@ interface NavItem {
   to: string;
   label: string;
   icon: React.ReactNode;
+  allowedRoles: string[];
 }
 
 const navItems: NavItem[] = [
   {
     to: "/dashboard",
     label: "Overview",
+    allowedRoles: ["MANAGER", "STAFF"],
     icon: (
       <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
         <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -23,6 +25,7 @@ const navItems: NavItem[] = [
   {
     to: "/dashboard/customers",
     label: "Customers",
+    allowedRoles: ["MANAGER", "STAFF"],
     icon: (
       <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
         <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
@@ -34,6 +37,7 @@ const navItems: NavItem[] = [
   {
     to: "/dashboard/invoices",
     label: "Invoices",
+    allowedRoles: ["MANAGER", "STAFF"],
     icon: (
       <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
@@ -46,6 +50,7 @@ const navItems: NavItem[] = [
   {
     to: "/dashboard/payments",
     label: "Payments",
+    allowedRoles: ["MANAGER", "STAFF"],
     icon: (
       <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
         <rect x="2" y="5" width="20" height="14" rx="2" />
@@ -56,6 +61,7 @@ const navItems: NavItem[] = [
   {
     to: "/dashboard/reports",
     label: "Reports",
+    allowedRoles: ["MANAGER"],
     icon: (
       <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
         <line x1="18" y1="20" x2="18" y2="10" />
@@ -70,6 +76,7 @@ const managerOnlyNavItems: NavItem[] = [
   {
     to: "/dashboard/team",
     label: "Team",
+    allowedRoles: ["MANAGER"],
     icon: (
       <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
         <path d="M20 21v-2a4 4 0 00-3-3.87" />
@@ -97,6 +104,9 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
 
   const displayName = (user?.firstName || user?.lastName || user?.email || "??").trim();
   const initials = displayName.slice(0, 2).toUpperCase();
+  const visibleNavItems = [...navItems, ...managerOnlyNavItems].filter((item) =>
+    item.allowedRoles.some((role) => user?.roles?.includes(role))
+  );
 
   const sidebarContent = (
     <aside className="h-full w-56 bg-gray-900 text-gray-200 flex flex-col">
@@ -128,7 +138,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
-        {[...navItems, ...(user?.roles?.includes("MANAGER") ? managerOnlyNavItems : [])].map((item) => (
+        {visibleNavItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

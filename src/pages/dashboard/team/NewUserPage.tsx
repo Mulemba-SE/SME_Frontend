@@ -24,7 +24,6 @@ const initialForm: FormState = {
 
 const ROLE_OPTIONS: { value: AssignableRole; label: string }[] = [
   { value: "STAFF", label: "Staff" },
-  { value: "CUSTOMER", label: "Customer" },
   { value: "MANAGER", label: "Manager" },
 ];
 

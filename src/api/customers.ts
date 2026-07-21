@@ -16,12 +16,6 @@ function normalizeCustomer(raw: Partial<Customer> & Record<string, unknown>): Cu
     lastName: typeof raw.lastName === "string" ? raw.lastName : undefined,
     email: typeof raw.email === "string" ? raw.email : undefined,
     phoneNumber: typeof raw.phoneNumber === "string" ? raw.phoneNumber : undefined,
-    invoiceNo: raw.invoiceNo != null ? Number(raw.invoiceNo) : undefined,
-    status: typeof raw.status === "string" ? raw.status : undefined,
-    total: raw.total != null ? Number(raw.total) : undefined,
-    totalTax: raw.totalTax != null ? Number(raw.totalTax) : undefined,
-    amountPaid: raw.amountPaid != null ? Number(raw.amountPaid) : undefined,
-    dueDate: typeof raw.dueDate === "string" ? raw.dueDate : undefined,
   };
 }
 
@@ -33,9 +27,6 @@ export const customersApi = {
       email: params.searchBy === "email" ? params.search?.trim() || undefined : undefined,
       customerNo: params.searchBy === "userNo" ? params.search?.trim() || undefined : undefined,
       phoneNumber: params.searchBy === "phoneNumber" ? params.search?.trim() || undefined : undefined,
-      dueDateFrom: params.searchBy === "dueDate" ? params.search || undefined : undefined,
-      dueDateTo: params.searchBy === "dueDate" ? params.search || undefined : undefined,
-      status: params.status === "all" ? undefined : params.status,
       page: apiPage,
       size: params.limit,
     };
