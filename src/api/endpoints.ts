@@ -19,6 +19,7 @@ export const API = {
     MINE: "/invoices/mine",
     CREATE: "/invoices",
     STATS: "/invoices/dashboard",
+    MINE_STATS: "/invoices/mine/dashboard",
     DETAIL: "/invoices/detailed-invoice",
     SEND_CONFIRMATION: "/invoices",
   },

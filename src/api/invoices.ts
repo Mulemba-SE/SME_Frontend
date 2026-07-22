@@ -8,6 +8,7 @@ import type {
   InvoiceItemResult,
   InvoicesFilterParams,
   InvoiceStats,
+  CustomerDashboardStats,
 } from "../types/invoice";
 
 function normalizeInvoice(raw: Partial<InvoiceListItem> & Record<string, unknown>): InvoiceListItem {
@@ -114,8 +115,17 @@ export const invoicesApi = {
   },
 
   
-  stats: async (): Promise<InvoiceStats> => {
-    const res = await api.get<InvoiceStats>(API.INVOICES.STATS);
+  stats: async (params?: { mine?: boolean }): Promise<InvoiceStats> => {
+    const res = await api.get<InvoiceStats>(API.INVOICES.STATS, {
+      params: { mine: params?.mine || undefined },
+    });
+    return res.data;
+  },
+
+  // Customer-scoped dashboard stats — hits its own route (not the
+  // staff-only STATS endpoint), so there's no `mine` param to pass.
+  myStats: async (): Promise<CustomerDashboardStats> => {
+    const res = await api.get<CustomerDashboardStats>(API.INVOICES.MINE_STATS);
     return res.data;
   },
 

@@ -265,53 +265,55 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-      {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
-        <StatCard
-          label="Total Receivables"
-          value={statsUnavailable ? "—" : formatKES(stats?.amount_receivables ?? 0)}
-          iconBg="#EEF2FF"
-          icon={
-            <svg width="20" height="20" fill="none" stroke="#4F46E5" strokeWidth="1.8" viewBox="0 0 24 24">
-              <line x1="12" y1="1" x2="12" y2="23" />
-              <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-            </svg>
-          }
-        />
-        <StatCard
-          label="Overdue Amount"
-          value={statsUnavailable ? "—" : formatKES(stats?.amount_overdue ?? 0)}
-          iconBg="#FEF3C7"
-          icon={
-            <svg width="20" height="20" fill="none" stroke="#D97706" strokeWidth="1.8" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-          }
-        />
-        <StatCard
-          label="Pending Invoices"
-          value={statsUnavailable ? "—" : String(stats?.pending ?? 0)}
-          iconBg="#F0FDF4"
-          icon={
-            <svg width="20" height="20" fill="none" stroke="#16A34A" strokeWidth="1.8" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="8 12 11 15 16 9" />
-            </svg>
-          }
-        />
-        <StatCard
-          label="Total Drafts"
-          value={statsUnavailable ? "—" : String(stats?.draft ?? 0)}
-          iconBg="#F3E8FF"
-          icon={
-            <svg width="20" height="20" fill="none" stroke="#9333EA" strokeWidth="1.8" viewBox="0 0 24 24">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
-          }
-        />
-      </div>
+      {/* ── Stat Cards (staff/managers only — customers never see revenue-wide stats) ── */}
+      {!isCustomer && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
+          <StatCard
+            label="Total Receivables"
+            value={statsUnavailable ? "—" : formatKES(stats?.amount_receivables ?? 0)}
+            iconBg="#EEF2FF"
+            icon={
+              <svg width="20" height="20" fill="none" stroke="#4F46E5" strokeWidth="1.8" viewBox="0 0 24 24">
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+              </svg>
+            }
+          />
+          <StatCard
+            label="Overdue Amount"
+            value={statsUnavailable ? "—" : formatKES(stats?.amount_overdue ?? 0)}
+            iconBg="#FEF3C7"
+            icon={
+              <svg width="20" height="20" fill="none" stroke="#D97706" strokeWidth="1.8" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            }
+          />
+          <StatCard
+            label="Pending Invoices"
+            value={statsUnavailable ? "—" : String(stats?.pending ?? 0)}
+            iconBg="#F0FDF4"
+            icon={
+              <svg width="20" height="20" fill="none" stroke="#16A34A" strokeWidth="1.8" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="8 12 11 15 16 9" />
+              </svg>
+            }
+          />
+          <StatCard
+            label="Total Drafts"
+            value={statsUnavailable ? "—" : String(stats?.draft ?? 0)}
+            iconBg="#F3E8FF"
+            icon={
+              <svg width="20" height="20" fill="none" stroke="#9333EA" strokeWidth="1.8" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+            }
+          />
+        </div>
+      )}
 
       {/* ── Filters ── */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">

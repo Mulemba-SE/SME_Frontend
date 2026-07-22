@@ -1,14 +1,16 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useInvoices } from "../../hooks/useInvoices";
+import { useInvoices, useMyDashboardStats } from "../../hooks/useInvoices";
 import { useAuth } from "../../hooks/useAuth";
 import { usePayments } from "../../hooks/usePayments";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { StatCard } from "../../components/ui/StatCard";
+import { Pagination } from "../../components/ui/Pagination";
 import { InvoiceStatusBadge, PaymentStatusBadge } from "../../components/ui/StatusBadge";
 import { formatKES, formatDate } from "../../lib/format";
 import type { InvoiceListItem } from "../../types/invoice";
 import type { PaymentListItem } from "../../types/payment";
-import { FileText, Receipt } from "lucide-react";
+import { FileText, Receipt, Search } from "lucide-react";
 
 const PAGE_SIZE = 5;
 const COLUMN_COUNT = 6;
@@ -131,34 +133,85 @@ export default function CustomerDashboardPage() {
   const [activeTab, setActiveTab] = useState<"invoices" | "payments">("invoices");
   const { user } = useAuth();
 
+  const [invoiceSearchInput, setInvoiceSearchInput] = useState("");
+  const [invoicePage, setInvoicePage] = useState(1);
+  const invoiceSearch = useDebouncedValue(invoiceSearchInput, 350);
+  const trimmedInvoiceSearch = invoiceSearch.trim();
+  const invoiceSearchNumber = Number(trimmedInvoiceSearch);
+  const hasValidInvoiceSearch =
+    trimmedInvoiceSearch !== "" && Number.isFinite(invoiceSearchNumber) && invoiceSearchNumber > 0;
+
+  const [paymentSearchInput, setPaymentSearchInput] = useState("");
+  const [paymentPage, setPaymentPage] = useState(1);
+  const paymentSearch = useDebouncedValue(paymentSearchInput, 350);
+  const trimmedPaymentSearch = paymentSearch.trim();
+  const paymentSearchNumber = Number(trimmedPaymentSearch);
+  const hasValidPaymentSearch =
+    trimmedPaymentSearch !== "" && Number.isFinite(paymentSearchNumber) && paymentSearchNumber > 0;
+
+  const handleInvoiceSearchChange = (value: string) => {
+    setInvoiceSearchInput(value);
+    setInvoicePage(1);
+  };
+
+  const handlePaymentSearchChange = (value: string) => {
+    setPaymentSearchInput(value);
+    setPaymentPage(1);
+  };
+
   const {
-    data: invoices = [],
+    data: tableInvoices = [],
     isLoading: invoicesLoading,
+    isFetching: invoicesFetching,
     isError: invoicesError,
     error: invoicesErrorObj,
-  } = useInvoices({ status: "all", page: 1, limit: PAGE_SIZE, sortBy: "CREATE_DATE", sortDirection: "DESC", mine: true });
+  } = useInvoices({
+    status: "all",
+    invoiceNo: hasValidInvoiceSearch ? invoiceSearchNumber : undefined,
+    page: invoicePage,
+    limit: PAGE_SIZE,
+    sortBy: "CREATE_DATE",
+    sortDirection: "DESC",
+    mine: true,
+  });
 
   const {
-    data: payments = [],
+    data: tablePayments = [],
     isLoading: paymentsLoading,
+    isFetching: paymentsFetching,
     isError: paymentsError,
     error: paymentsErrorObj,
-  } = usePayments({ page: 1, limit: PAGE_SIZE, mine: true });
+  } = usePayments({
+    paymentNo: hasValidPaymentSearch ? paymentSearchNumber : undefined,
+    page: paymentPage,
+    limit: PAGE_SIZE,
+    mine: true,
+  });
 
-  const invoicesUnavailable = invoicesLoading;
-  const paymentsUnavailable = paymentsLoading;
+  // Real, backend-computed stats for the cards up top — independent of the
+  // table's search/pagination, and not limited to whatever page happens to
+  // be fetched for the table below. Uses the customer-scoped dashboard
+  // endpoint (GET /invoices/mine/dashboard), not the staff-only STATS routes.
+  const {
+    data: dashboardStats,
+    isLoading: dashboardStatsLoading,
+    isError: dashboardStatsError,
+  } = useMyDashboardStats();
+
+  const invoiceTotalPages = invoicePage + (tableInvoices.length === PAGE_SIZE ? 1 : 0);
+  const paymentTotalPages = paymentPage + (tablePayments.length === PAGE_SIZE ? 1 : 0);
+
+  const statsUnavailable = dashboardStatsLoading || dashboardStatsError;
 
   const firstName = user?.firstName ?? "there";
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  const totalPaid = useMemo(
-    () => payments.reduce((sum, payment) => sum + (payment.amount ?? 0), 0),
-    [payments]
-  );
-
-  const totalInvoices = useMemo(() => invoices.length, [invoices.length]);
+  const totalInvoices = dashboardStats?.totalInvoices;
+  const totalPaid = dashboardStats?.totalPaid ?? 0;
+  const outstandingBalance = dashboardStats?.outstandingBalance ?? 0;
+  const overdueInvoicesCount = dashboardStats?.overdueInvoices ?? 0;
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -173,10 +226,23 @@ export default function CustomerDashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+
+                <StatCard
+          label="Outstanding Balance"
+          value={statsUnavailable ? "—" : formatKES(outstandingBalance)}
+          iconBg="#FEF3C7"
+          icon={
+            <svg width="18" height="18" fill="none" stroke="#D97706" strokeWidth="1.8" viewBox="0 0 24 24">
+              <rect x="2" y="6" width="20" height="12" rx="2" />
+              <path d="M16 12h.01" />
+            </svg>
+          }
+        />
+        
         <StatCard
-          label="Total invoices"
-          value={invoicesUnavailable ? "—" : String(totalInvoices)}
+          label="Total Invoices"
+          value={statsUnavailable ? "—" : String(totalInvoices ?? 0)}
           iconBg="#EFF6FF"
           icon={
             <svg width="18" height="18" fill="none" stroke="#2563EB" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -187,8 +253,8 @@ export default function CustomerDashboardPage() {
         />
 
         <StatCard
-          label="Total paid"
-          value={paymentsUnavailable ? "—" : formatKES(totalPaid ?? 0)}
+          label="Total Paid"
+          value={statsUnavailable ? "—" : formatKES(totalPaid ?? 0)}
           iconBg="#ECFDF5"
           icon={
             <svg width="18" height="18" fill="none" stroke="#059669" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -197,10 +263,25 @@ export default function CustomerDashboardPage() {
             </svg>
           }
         />
+
+
+
+        <StatCard
+          label="Overdue Invoices"
+          value={statsUnavailable ? "—" : String(overdueInvoicesCount)}
+          iconBg="#FEE2E2"
+          icon={
+            <svg width="18" height="18" fill="none" stroke="#DC2626" strokeWidth="1.8" viewBox="0 0 24 24">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          }
+        />
       </div>
 
       <div className="bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
           <div className="flex items-center gap-2 overflow-x-auto">
             <button
               type="button"
@@ -224,6 +305,34 @@ export default function CustomerDashboardPage() {
             >
               Payments
             </button>
+          </div>
+
+          <div className="relative w-full sm:w-64">
+            <Search
+              size={15}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+            />
+            {activeTab === "invoices" ? (
+              <input
+                type="text"
+                value={invoiceSearchInput}
+                onChange={(e) => handleInvoiceSearchChange(e.target.value)}
+                placeholder="Search by invoice number..."
+                className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 bg-white rounded-lg outline-none
+                  placeholder:text-gray-400 text-gray-900
+                  focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+              />
+            ) : (
+              <input
+                type="text"
+                value={paymentSearchInput}
+                onChange={(e) => handlePaymentSearchChange(e.target.value)}
+                placeholder="Search by payment number..."
+                className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 bg-white rounded-lg outline-none
+                  placeholder:text-gray-400 text-gray-900
+                  focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+              />
+            )}
           </div>
         </div>
 
@@ -250,20 +359,24 @@ export default function CustomerDashboardPage() {
                     </td>
                   </tr>
                 </tbody>
-              ) : invoices.length === 0 ? (
+              ) : tableInvoices.length === 0 ? (
                 <tbody>
                   <tr>
                     <td colSpan={COLUMN_COUNT} className="px-4 py-8">
                       <EmptyState
-                        title="No invoices yet"
-                        message="Your invoices will appear here once they are available."
+                        title={hasValidInvoiceSearch ? "No matching invoices" : "No invoices yet"}
+                        message={
+                          hasValidInvoiceSearch
+                            ? "Try a different invoice number."
+                            : "Your invoices will appear here once they are available."
+                        }
                       />
                     </td>
                   </tr>
                 </tbody>
               ) : (
                 <tbody className="divide-y divide-gray-100">
-                  {invoices.map((invoice, index) => (
+                  {tableInvoices.map((invoice, index) => (
                     <InvoiceRow key={invoice.invoiceNo} invoice={invoice} index={index} />
                   ))}
                 </tbody>
@@ -278,26 +391,58 @@ export default function CustomerDashboardPage() {
                   </td>
                 </tr>
               </tbody>
-            ) : payments.length === 0 ? (
+            ) : tablePayments.length === 0 ? (
               <tbody>
                 <tr>
                   <td colSpan={COLUMN_COUNT} className="px-4 py-8">
                     <EmptyState
-                      title="No payments yet"
-                      message="Payments will appear here once they are recorded."
+                      title={hasValidPaymentSearch ? "No matching payments" : "No payments yet"}
+                      message={
+                        hasValidPaymentSearch
+                          ? "Try a different payment number."
+                          : "Payments will appear here once they are recorded."
+                      }
                     />
                   </td>
                 </tr>
               </tbody>
             ) : (
               <tbody className="divide-y divide-gray-100">
-                {payments.map((payment, index) => (
+                {tablePayments.map((payment, index) => (
                   <PaymentRow key={payment.paymentNo} payment={payment} index={index} />
                 ))}
               </tbody>
             )}
           </table>
         </div>
+
+        {activeTab === "invoices"
+          ? !invoicesLoading &&
+            !invoicesError &&
+            tableInvoices.length > 0 && (
+              <Pagination
+                page={invoicePage}
+                totalPages={invoiceTotalPages}
+                itemCount={tableInvoices.length}
+                pageSize={PAGE_SIZE}
+                isFetching={invoicesFetching}
+                onPageChange={setInvoicePage}
+                itemLabel="invoices"
+              />
+            )
+          : !paymentsLoading &&
+            !paymentsError &&
+            tablePayments.length > 0 && (
+              <Pagination
+                page={paymentPage}
+                totalPages={paymentTotalPages}
+                itemCount={tablePayments.length}
+                pageSize={PAGE_SIZE}
+                isFetching={paymentsFetching}
+                onPageChange={setPaymentPage}
+                itemLabel="payments"
+              />
+            )}
       </div>
     </div>
   );

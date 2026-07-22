@@ -82,3 +82,13 @@ export interface InvoiceStats {
   amount_overdue: number;
   amount_receivables: number;
 }
+
+// Customer-scoped dashboard stats (GET /invoices/mine/dashboard) — the
+// backend counterpart to CustomerDashboardStatsDTO. Used by the four
+// summary cards on the customer dashboard.
+export interface CustomerDashboardStats {
+  totalInvoices: number;
+  totalPaid: number;
+  outstandingBalance: number;
+  overdueInvoices: number;
+}
