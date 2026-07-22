@@ -23,6 +23,7 @@ export interface PaymentsFilterParams {
   invoiceNo?: number;
   page?: number;
   limit?: number;
+  mine?: boolean;
 }
 
 export interface PaymentStats {

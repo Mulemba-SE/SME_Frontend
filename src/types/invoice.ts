@@ -72,6 +72,7 @@ export interface InvoicesFilterParams {
   sortDirection?: SortDirection;
   page?: number; 
   limit?: number;
+  mine?: boolean;
 }
 
 export interface InvoiceStats {

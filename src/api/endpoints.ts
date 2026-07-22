@@ -16,6 +16,7 @@ export const API = {
 
   INVOICES: {
     LIST: "/invoices",            
+    MINE: "/invoices/mine",
     CREATE: "/invoices",
     STATS: "/invoices/dashboard",
     DETAIL: "/invoices/detailed-invoice",
@@ -23,10 +24,11 @@ export const API = {
   },
 
   PAYMENTS: {
-  LIST: "/payments",
-  STATS: "/payments/dashboard",
-  DETAIL: "/payments/detailed-payment",
-},
+    LIST: "/payments",
+    MINE: "/payments/mine",
+    STATS: "/payments/dashboard",
+    DETAIL: "/payments/detailed-payment",
+  },
 
   ADMIN: {
     USERS: "/admin/users",

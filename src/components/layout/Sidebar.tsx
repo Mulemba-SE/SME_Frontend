@@ -12,7 +12,7 @@ const navItems: NavItem[] = [
   {
     to: "/dashboard",
     label: "Overview",
-    allowedRoles: ["MANAGER", "STAFF"],
+    allowedRoles: ["MANAGER", "STAFF", "CUSTOMER"],
     icon: (
       <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
         <rect x="3" y="3" width="7" height="7" rx="1" />

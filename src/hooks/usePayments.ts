@@ -12,17 +12,18 @@ export function usePayments(params: PaymentsFilterParams) {
   });
 }
 
-export function usePaymentStats() {
+export function usePaymentStats(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: [PAYMENTS_KEY, "stats"],
     queryFn: () => paymentsApi.stats(),
+    enabled: options?.enabled ?? true,
   });
 }
 
-export function usePaymentDetail(paymentNo: number) {
+export function usePaymentDetail(paymentNo: number, mine?: boolean) {
   return useQuery({
-    queryKey: [PAYMENTS_KEY, "detail", paymentNo],
-    queryFn: () => paymentsApi.detail(paymentNo),
+    queryKey: [PAYMENTS_KEY, "detail", paymentNo, mine],
+    queryFn: () => paymentsApi.detail(paymentNo, mine),
     enabled: Number.isFinite(paymentNo) && paymentNo > 0,
   });
 }

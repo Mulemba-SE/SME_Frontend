@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../../hooks/useAuth";
 import { usePayments, usePaymentStats } from "../../../hooks/usePayments";
 import { getApiErrorMessage } from "../../../api/client";
 import { StatCard } from "../../../components/ui/StatCard";
@@ -108,6 +109,9 @@ function PaymentRow({ payment }: { payment: PaymentListItem }) {
   const numericSearch = Number(trimmedSearch);
   const hasValidNumericSearch = trimmedSearch !== "" && Number.isFinite(numericSearch) && numericSearch > 0;
 
+  const { user } = useAuth();
+  const isCustomer = Boolean(user?.roles?.includes("CUSTOMER"));
+
   const { data, isLoading, isError, error, isFetching } = usePayments({
     paymentNo: searchBy === "paymentNo" && hasValidNumericSearch ? numericSearch : undefined,
     invoiceNo: searchBy === "invoiceNo" && hasValidNumericSearch ? numericSearch : undefined,
@@ -115,9 +119,10 @@ function PaymentRow({ payment }: { payment: PaymentListItem }) {
     status: statusFilter,
     page,
     limit: PAGE_SIZE,
+    mine: isCustomer,
   });
 
-  const { data: stats, isLoading: isStatsLoading, isError: isStatsError } = usePaymentStats();
+  const { data: stats, isLoading: isStatsLoading, isError: isStatsError } = usePaymentStats({ enabled: !isCustomer });
   const statsUnavailable = isStatsLoading || isStatsError;
 
   const payments = data ?? [];

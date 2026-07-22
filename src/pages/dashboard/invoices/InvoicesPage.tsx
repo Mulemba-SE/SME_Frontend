@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../../hooks/useAuth";
 import { useInvoices, useInvoiceStats } from "../../../hooks/useInvoices";
 import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
 import { getApiErrorMessage } from "../../../api/client";
@@ -154,6 +155,9 @@ export default function InvoicesPage() {
   const numericSearch = Number(trimmedSearch);
   const hasValidNumericSearch = trimmedSearch !== "" && Number.isFinite(numericSearch) && numericSearch > 0;
 
+  const { user } = useAuth();
+  const isCustomer = Boolean(user?.roles?.includes("CUSTOMER"));
+
   const { data, isLoading, isError, error, isFetching } = useInvoices({
     firstName: searchBy === "firstName" ? (trimmedSearch || undefined) : undefined,
     lastName: searchBy === "lastName" ? (trimmedSearch || undefined) : undefined,
@@ -162,9 +166,10 @@ export default function InvoicesPage() {
     status: normalizedStatus,
     page,
     limit: PAGE_SIZE,
+    mine: isCustomer,
   });
 
-  const { data: stats, isLoading: isStatsLoading, isError: isStatsError } = useInvoiceStats();
+  const { data: stats, isLoading: isStatsLoading, isError: isStatsError } = useInvoiceStats({ enabled: !isCustomer });
   const statsUnavailable = isStatsLoading || isStatsError;
 
   const rawInvoices = Array.isArray(data) ? data : [];

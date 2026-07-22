@@ -27,16 +27,31 @@ function normalizeInvoice(raw: Partial<InvoiceListItem> & Record<string, unknown
 function normalizeInvoiceItem(raw: Partial<InvoiceItemResult> & Record<string, unknown>): InvoiceItemResult {
   const itemName = raw.itemName ?? raw.item_name;
   const unitPrice = raw.unitPrice ?? raw.unit_price;
-  const taxTotal = raw.tax_total ?? raw.total_tax;
-  const total = raw.total ?? raw.sub_total;
+  const quantity = raw.quantity;
+  const taxRate = raw.tax; // backend sends this as a percentage rate, e.g. 10 = 10%
+
+  const parsedUnitPrice = unitPrice != null ? Number(unitPrice) : 0;
+  const parsedQuantity = quantity != null ? Number(quantity) : 0;
+  const parsedTaxRate = taxRate != null ? Number(taxRate) : 0;
+
+  // Backend field names: subTotal / taxSubtotal. Older/alt shapes: total / sub_total, tax_total / total_tax.
+  const rawSubTotal = raw.subTotal ?? raw.sub_total ?? raw.total;
+  const rawTaxSubtotal = raw.taxSubtotal ?? raw.tax_total ?? raw.total_tax;
+
+  // Backend sometimes sends these as null instead of computing them — fall back to computing client-side.
+  const computedSubTotal = parsedUnitPrice * parsedQuantity;
+  const subTotal = rawSubTotal != null ? Number(rawSubTotal) : computedSubTotal;
+
+  const computedTaxSubtotal = subTotal * (parsedTaxRate / 100);
+  const taxSubtotal = rawTaxSubtotal != null ? Number(rawTaxSubtotal) : computedTaxSubtotal;
 
   return {
     itemName: typeof itemName === "string" ? itemName : "",
-    unitPrice: unitPrice != null ? Number(unitPrice) : 0,
-    quantity: raw.quantity != null ? Number(raw.quantity) : 0,
-    tax: raw.tax != null ? Number(raw.tax) : 0,
-    tax_total: taxTotal != null ? Number(taxTotal) : 0,
-    total: total != null ? Number(total) : 0,
+    unitPrice: parsedUnitPrice,
+    quantity: parsedQuantity,
+    tax: parsedTaxRate,
+    tax_total: taxSubtotal,
+    total: subTotal + taxSubtotal,
   };
 }
 
@@ -59,6 +74,7 @@ export const invoicesApi = {
 
   list: async (params: InvoicesFilterParams): Promise<InvoiceListItem[]> => {
     const apiPage = Math.max(0, (params.page ?? 1) - 1);
+    const endpoint = params.mine ? API.INVOICES.MINE : API.INVOICES.LIST;
 
     const queryParams = {
       firstName: params.firstName,
@@ -74,7 +90,7 @@ export const invoicesApi = {
       size: params.limit,
     };
 
-    const res = await api.get<Partial<InvoiceListItem>[]>(API.INVOICES.LIST, { params: queryParams });
+    const res = await api.get<Partial<InvoiceListItem>[]>(endpoint, { params: queryParams });
     return (res.data ?? []).map(normalizeInvoice);
   },
 
@@ -83,8 +99,17 @@ export const invoicesApi = {
     return res.data;
   },
 
-  detail: async (params: { invoiceNo: number; customerNo: number }): Promise<InvoiceDetail> => {
-    const res = await api.get<Partial<InvoiceDetail> & Record<string, unknown>>(API.INVOICES.DETAIL, { params });
+  detail: async (params: { invoiceNo: number; customerNo?: number; mine?: boolean }): Promise<InvoiceDetail> => {
+    if (params.mine) {
+      const res = await api.get<Partial<InvoiceDetail> & Record<string, unknown>>(
+        `${API.INVOICES.MINE}/${params.invoiceNo}`
+      );
+      return normalizeInvoiceDetail(res.data ?? {});
+    }
+
+    const res = await api.get<Partial<InvoiceDetail> & Record<string, unknown>>(API.INVOICES.DETAIL, {
+      params: { invoiceNo: params.invoiceNo, customerNo: params.customerNo },
+    });
     return normalizeInvoiceDetail(res.data ?? {});
   },
 

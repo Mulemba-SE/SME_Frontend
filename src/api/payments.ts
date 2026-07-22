@@ -178,8 +178,9 @@ function normalizePaymentDetail(
 export const paymentsApi = {
 list: async (params: PaymentsFilterParams): Promise<PaymentListItem[]> => {
   const apiPage = Math.max(0, (params.page ?? 1) - 1);
+  const endpoint = params.mine ? API.PAYMENTS.MINE : API.PAYMENTS.LIST;
 
-  const res = await api.get<Partial<PaymentListItem>[]>(API.PAYMENTS.LIST, {
+  const res = await api.get<Partial<PaymentListItem>[]>(endpoint, {
     params: {
       paymentNo: params.paymentNo || undefined,
       invoiceNo: params.invoiceNo || undefined,
@@ -202,39 +203,43 @@ list: async (params: PaymentsFilterParams): Promise<PaymentListItem[]> => {
   },
 
   detail: async (
-    paymentNo: number
+    paymentNo: number,
+    mine?: boolean
   ): Promise<PaymentDetail> => {
-    const res = await api.get<
-      Partial<PaymentDetail> &
-      Record<string, unknown>
-    >(API.PAYMENTS.DETAIL, {
-      params: { paymentNo },
-    });
+    if (mine) {
+      const res = await api.get<Partial<PaymentDetail> & Record<string, unknown>>(
+        `${API.PAYMENTS.MINE}/${paymentNo}`
+      );
+      return normalizePaymentDetail(res.data ?? {});
+    }
+
+    const res = await api.get<Partial<PaymentDetail> & Record<string, unknown>>(
+      API.PAYMENTS.DETAIL,
+      {
+        params: { paymentNo },
+      }
+    );
 
     return normalizePaymentDetail(res.data ?? {});
   },
 
-  create: async (
-    input: CreatePaymentRequest
-  ): Promise<CreatePaymentResponse> => {
-    const res = await api.post<CreatePaymentResponse>(
-      API.PAYMENTS.LIST,
-      null, //body
-      {
-        params: {
-          customerNo: input.customerNo,
-          invoiceNo: input.invoiceNo,
-          amount: input.amount,
-          transaction_ref:
-            input.transaction_ref || undefined,
-          payment_method: input.payment_method,
-          notes: input.notes || undefined,
-        },
-      }
-    );
+ create: async (
+  input: CreatePaymentRequest
+): Promise<CreatePaymentResponse> => {
+  const res = await api.post<CreatePaymentResponse>(
+    API.PAYMENTS.LIST,
+    {
+      customerNo: input.customerNo,
+      invoiceNo: input.invoiceNo,
+      amount: input.amount,
+      transaction_ref: input.transaction_ref || undefined,
+      payment_method: input.payment_method,
+      notes: input.notes || undefined,
+    }
+  );
 
-    return res.data;
-  },
+  return res.data;
+},
 
   confirm: async (
     paymentNo: number

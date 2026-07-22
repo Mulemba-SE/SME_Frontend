@@ -12,10 +12,11 @@ export function useInvoices(params: InvoicesFilterParams) {
   });
 }
 
-export function useInvoiceStats() {
+export function useInvoiceStats(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: [INVOICES_KEY, "stats"],
     queryFn: () => invoicesApi.stats(),
+    enabled: options?.enabled ?? true,
   });
 }
 

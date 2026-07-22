@@ -32,7 +32,7 @@ function TableSkeleton() {
   );
 }
 
-function InlineError({ message }: { message: string }) {
+function InlineError({ message, isCustomer }: { message: string; isCustomer: boolean }) {
   return (
     <div className="p-8 flex flex-col items-center justify-center min-h-[60vh] text-center">
       <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mb-4">
@@ -45,7 +45,7 @@ function InlineError({ message }: { message: string }) {
       <p className="text-sm font-semibold text-gray-900 mb-1">Unable to load payment</p>
       <p className="text-sm text-gray-500 max-w-xs">{message}</p>
       <Link
-        to="/dashboard/payments"
+        to={isCustomer ? "/dashboard" : "/dashboard/payments"}
         className="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
       >
         Back to payments
@@ -115,9 +115,10 @@ export default function PaymentDetailPage() {
   const { paymentNo: paymentNoParam } = useParams<{ paymentNo: string }>();
   const paymentNo = Number(paymentNoParam);
   const { user } = useAuth();
+  const isCustomer = Boolean(user?.roles?.includes("CUSTOMER"));
   const isManager = Boolean(user?.roles?.includes("MANAGER"));
 
-  const { data: payment, isLoading, isError, error } = usePaymentDetail(paymentNo);
+  const { data: payment, isLoading, isError, error } = usePaymentDetail(paymentNo, isCustomer);
 
   const confirmPayment = useConfirmPayment();
   const failPayment = useFailPayment();
@@ -131,12 +132,16 @@ export default function PaymentDetailPage() {
   if (isLoading) return <TableSkeleton />;
 
   if (isError || !payment) {
-    return <InlineError message={getApiErrorMessage(error, "Payment not found. Please check the number and try again.")} />;
+    return (
+      <InlineError
+        message={getApiErrorMessage(error, "Payment not found. Please check the number and try again.")}
+        isCustomer={isCustomer}
+      />
+    );
   }
 
   const paymentLabel = `PAY-${String(payment.paymentNo).padStart(6, "0")}`;
   const invoiceLabel = `INV-${String(payment.invoiceNo).padStart(7, "0")}`;
-
   return (
     <div className="w-full pb-10">
       {/* Header */}
@@ -209,7 +214,7 @@ export default function PaymentDetailPage() {
               </button>
             </div>
             <Link
-              to="/dashboard/payments"
+              to={isCustomer ? "/dashboard" : "/dashboard/payments"}
               className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 text-sm font-medium text-white transition-colors hover:bg-white/20"
             >
               <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24">

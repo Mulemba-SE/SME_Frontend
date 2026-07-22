@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AuthPage from './pages/auth/AuthPage'
 import ChangePasswordPage from './pages/auth/ChangePasswordPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
+import CustomerDashboardPage from './pages/dashboard/CustomerDashboardPage'
 import CustomersPage from './pages/dashboard/customers/CustomersPage'
 import NewCustomerPage from './pages/dashboard/customers/NewCustomerPage'
 import CustomerDetailPage from './pages/dashboard/customers/CustomerDetailPage'
@@ -23,14 +24,18 @@ import { useAuth } from './hooks/useAuth'
 
 const qc = new QueryClient()
 const operationalRoles = ["MANAGER", "STAFF"]
+const customerInvoicePaymentRoles = ["MANAGER", "STAFF", "CUSTOMER"]
 
 // Separate inner component so it sits inside the providers
 function AppRoutes() {
-  const { restoreSession } = useAuth()
+  const { restoreSession, user } = useAuth()
   const [sessionChecked, setSessionChecked] = useState(false)
 
   useEffect(() => {
     restoreSession().finally(() => setSessionChecked(true))
+    // We intentionally omit restoreSession from deps because its reference changes on every render
+    // and we only want to run this once when the app initializes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   if (!sessionChecked) {
@@ -70,8 +75,8 @@ function AppRoutes() {
         <Route
           index
           element={
-            <ProtectedRoute allowedRoles={operationalRoles}>
-              <DashboardPage />
+            <ProtectedRoute allowedRoles={customerInvoicePaymentRoles}>
+              {user?.roles?.includes("CUSTOMER") ? <CustomerDashboardPage /> : <DashboardPage />}
             </ProtectedRoute>
           }
         />
@@ -102,7 +107,7 @@ function AppRoutes() {
         <Route
           path="invoices"
           element={
-            <ProtectedRoute allowedRoles={operationalRoles}>
+            <ProtectedRoute allowedRoles={customerInvoicePaymentRoles}>
               <InvoicesPage />
             </ProtectedRoute>
           }
@@ -118,7 +123,7 @@ function AppRoutes() {
         <Route
           path="invoices/:id"
           element={
-            <ProtectedRoute allowedRoles={operationalRoles}>
+            <ProtectedRoute allowedRoles={customerInvoicePaymentRoles}>
               <InvoiceDetailPage />
             </ProtectedRoute>
           }
@@ -126,7 +131,7 @@ function AppRoutes() {
         <Route
           path="payments"
           element={
-            <ProtectedRoute allowedRoles={operationalRoles}>
+            <ProtectedRoute allowedRoles={customerInvoicePaymentRoles}>
               <PaymentsPage />
             </ProtectedRoute>
           }
@@ -142,7 +147,7 @@ function AppRoutes() {
         <Route
           path="payments/:paymentNo"
           element={
-            <ProtectedRoute allowedRoles={operationalRoles}>
+            <ProtectedRoute allowedRoles={customerInvoicePaymentRoles}>
               <PaymentDetailPage />
             </ProtectedRoute>
           }

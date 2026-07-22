@@ -5,6 +5,7 @@ import { invoicesApi } from "../../../api/invoices";
 import { getApiErrorMessage } from "../../../api/client";
 import { useSendInvoiceConfirmation } from "../../../hooks/useInvoices";
 import { usePayments } from "../../../hooks/usePayments";
+import { useAuth } from "../../../hooks/useAuth";
 import { StatCard } from "../../../components/ui/StatCard";
 import { InvoiceStatusBadge as StatusBadge, PaymentStatusBadge } from "../../../components/ui/StatusBadge";
 import { formatKES, formatDate } from "../../../lib/format";
@@ -33,7 +34,7 @@ function TableSkeleton() {
   );
 }
 
-function InlineError({ message }: { message: string }) {
+function InlineError({ message, isCustomer }: { message: string; isCustomer: boolean }) {
   return (
     <div className="p-8 flex flex-col items-center justify-center min-h-[60vh] text-center">
       <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mb-4">
@@ -46,7 +47,7 @@ function InlineError({ message }: { message: string }) {
       <p className="text-sm font-semibold text-gray-900 mb-1">Unable to load invoice</p>
       <p className="text-sm text-gray-500 max-w-xs">{message}</p>
       <Link
-        to="/dashboard/invoices"
+        to={isCustomer ? "/dashboard" : "/dashboard/invoices"}
         className="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
       >
         Back to invoices
@@ -111,16 +112,18 @@ function TimelineStep({
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const invoiceNo = Number(id);
+  const { user } = useAuth();
+  const isCustomer = Boolean(user?.roles?.includes("CUSTOMER"));
   const sendInvoiceConfirmation = useSendInvoiceConfirmation();
 
   const { data: invoice, isLoading, isError, error } = useQuery<InvoiceDetailView | null, Error>({
-    queryKey: ["invoice-detail", invoiceNo],
+    queryKey: ["invoice-detail", invoiceNo, isCustomer],
     queryFn: async () => {
       if (!id || Number.isNaN(invoiceNo) || invoiceNo <= 0) {
         throw new Error("Invalid invoice number.");
       }
 
-      const values = await invoicesApi.list({ invoiceNo, page: 1, limit: 1 });
+      const values = await invoicesApi.list({ invoiceNo, page: 1, limit: 1, mine: isCustomer });
       const summary = values[0];
       if (!summary) return null;
       if (summary.invoiceNo == null || summary.customerNo == null) return summary;
@@ -128,6 +131,7 @@ export default function InvoiceDetailPage() {
       const detail = await invoicesApi.detail({
         invoiceNo: summary.invoiceNo,
         customerNo: summary.customerNo,
+        mine: isCustomer,
       });
       
       return {
@@ -184,7 +188,7 @@ const handleSendInvoiceConfirmation = async () => {
     data: payments,
     isLoading: isPaymentsLoading,
     isError: isPaymentsError,
-  } = usePayments({ invoiceNo, page: 1, limit: 20 });
+  } = usePayments({ invoiceNo, page: 1, limit: 20, mine: isCustomer });
 
 const isSentDone = Boolean(invoice?.status && invoice.status.toLowerCase() !== "draft");
 const isPendingDone = Boolean(
@@ -205,7 +209,7 @@ const paidDate = useMemo(() => {
 
   if (isError || !invoice) {
     
-    return <InlineError message={getApiErrorMessage(error, "Invoice not found. Please check the number and try again.")} />;
+    return <InlineError message={getApiErrorMessage(error, "Invoice not found. Please check the number and try again.")} isCustomer={isCustomer} />;
   }
 
   const invoiceLabel = `INV-${String(invoice.invoiceNo).padStart(7, "0")}`;
@@ -250,7 +254,7 @@ const paidDate = useMemo(() => {
 
           <div className="flex flex-wrap items-center gap-2 lg:justify-end">
             <Link
-              to="/dashboard/invoices"
+              to={isCustomer ? "/dashboard" : "/dashboard/invoices"}
               className="order-last inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 text-sm font-medium text-white transition-colors hover:bg-white/20"
             >
               <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24">
@@ -259,58 +263,60 @@ const paidDate = useMemo(() => {
               </svg>
               <span className="text-sm">Back</span>
             </Link>
-            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-             <Link
-              to={isPaidDone ? "#" : recordPaymentHref}
-              aria-label="Record payment"
-              title={isPaidDone ? "Invoice is already fully paid" : "Record payment"}
-              onClick={(e) => { if (isPaidDone) e.preventDefault(); }}
-              aria-disabled={isPaidDone}
-              className={`inline-flex h-9 w-11 shrink-0 items-center justify-center rounded-lg border border-white/30 bg-white/10 text-white transition-colors ${
-                isPaidDone ? "cursor-not-allowed opacity-50" : "hover:bg-white/20"
-              }`}
-            >
-                <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                  <rect x="3" y="5" width="18" height="14" rx="2" />
-                  <path d="M3 10h18" />
-                  <path d="M7 15h3" />
-                </svg>
-              </Link>
-              <button
-                type="button"
-                disabled
-                title="Coming soon"
-                aria-label="Edit invoice"
-                className="inline-flex h-9 w-11 shrink-0 cursor-not-allowed items-center justify-center rounded-lg border border-white/30 bg-white/10 text-white opacity-70"
-              >
-                <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                disabled={invoice.status?.toLowerCase() !== "draft" || isSending}
-                onClick={handleSendInvoiceConfirmation}
-                title={invoice.status?.toLowerCase() === "draft" 
-                  ? "Send invoice confirmation" 
-                  : "Invoice has already been sent"}
+            {!isCustomer && (
+              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+               <Link
+                to={isPaidDone ? "#" : recordPaymentHref}
+                aria-label="Record payment"
+                title={isPaidDone ? "Invoice is already fully paid" : "Record payment"}
+                onClick={(e) => { if (isPaidDone) e.preventDefault(); }}
+                aria-disabled={isPaidDone}
                 className={`inline-flex h-9 w-11 shrink-0 items-center justify-center rounded-lg border border-white/30 bg-white/10 text-white transition-colors ${
-                  (invoice.status?.toLowerCase() !== "draft" || isSending) 
-                    ? "cursor-not-allowed opacity-50" 
-                    : "hover:bg-white/20"
+                  isPaidDone ? "cursor-not-allowed opacity-50" : "hover:bg-white/20"
                 }`}
               >
-                {isSending ? (
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
                   <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                    <path d="M22 2 11 13" />
-                    <path d="m22 2-7 20-4-9-9-4 20-7z" />
+                    <rect x="3" y="5" width="18" height="14" rx="2" />
+                    <path d="M3 10h18" />
+                    <path d="M7 15h3" />
                   </svg>
-                )}
-              </button>
-            </div>
+                </Link>
+                <button
+                  type="button"
+                  disabled
+                  title="Coming soon"
+                  aria-label="Edit invoice"
+                  className="inline-flex h-9 w-11 shrink-0 cursor-not-allowed items-center justify-center rounded-lg border border-white/30 bg-white/10 text-white opacity-70"
+                >
+                  <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  disabled={invoice.status?.toLowerCase() !== "draft" || isSending}
+                  onClick={handleSendInvoiceConfirmation}
+                  title={invoice.status?.toLowerCase() === "draft" 
+                    ? "Send invoice confirmation" 
+                    : "Invoice has already been sent"}
+                  className={`inline-flex h-9 w-11 shrink-0 items-center justify-center rounded-lg border border-white/30 bg-white/10 text-white transition-colors ${
+                    (invoice.status?.toLowerCase() !== "draft" || isSending) 
+                      ? "cursor-not-allowed opacity-50" 
+                      : "hover:bg-white/20"
+                  }`}
+                >
+                  {isSending ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                      <path d="M22 2 11 13" />
+                      <path d="m22 2-7 20-4-9-9-4 20-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
