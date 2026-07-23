@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AuthPage from './pages/auth/AuthPage'
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
+import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 import ChangePasswordPage from './pages/auth/ChangePasswordPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import CustomerDashboardPage from './pages/dashboard/CustomerDashboardPage'
@@ -16,6 +18,7 @@ import PaymentDetailPage from './pages/dashboard/payments/PaymentDetailPage'
 import ReportsPage from './pages/dashboard/ReportsPage'
 import UsersPage from './pages/dashboard/team/UsersPage'
 import NewUserPage from './pages/dashboard/team/NewUserPage'
+import StaffDashboardPage from './pages/dashboard/StaffDashboardPage'
 
 import DashboardLayout from './components/layout/DashboardLayout'
 import ProtectedRoute from './components/layout/ProtectedRoute'
@@ -26,16 +29,14 @@ const qc = new QueryClient()
 const operationalRoles = ["MANAGER", "STAFF"]
 const customerInvoicePaymentRoles = ["MANAGER", "STAFF", "CUSTOMER"]
 
-// Separate inner component so it sits inside the providers
+
 function AppRoutes() {
   const { restoreSession, user } = useAuth()
   const [sessionChecked, setSessionChecked] = useState(false)
 
   useEffect(() => {
     restoreSession().finally(() => setSessionChecked(true))
-    // We intentionally omit restoreSession from deps because its reference changes on every render
-    // and we only want to run this once when the app initializes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [])
 
   if (!sessionChecked) {
@@ -52,6 +53,8 @@ function AppRoutes() {
 
       {/* Public */}
       <Route path="/auth" element={<AuthPage />} />
+      <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
 
       {/* Protected, standalone (no dashboard chrome) */}
       <Route
@@ -76,7 +79,13 @@ function AppRoutes() {
           index
           element={
             <ProtectedRoute allowedRoles={customerInvoicePaymentRoles}>
-              {user?.roles?.includes("CUSTOMER") ? <CustomerDashboardPage /> : <DashboardPage />}
+              {user?.roles?.includes("CUSTOMER") ? (
+                <CustomerDashboardPage />
+              ) : user?.roles?.includes("STAFF") ? (
+                <StaffDashboardPage />
+              ) : (
+                <DashboardPage />
+              )}
             </ProtectedRoute>
           }
         />

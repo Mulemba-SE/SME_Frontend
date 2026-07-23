@@ -218,7 +218,11 @@ function LoginForm({ onSwitch }: { onSwitch: () => void }) {
           />
           Remember me
         </label>
-        <button type="button" className="text-sm text-blue-600 font-medium hover:text-blue-700">
+        <button
+          type="button"
+          onClick={() => navigate("/auth/forgot-password")}
+          className="text-sm text-blue-600 font-medium hover:text-blue-700"
+        >
           Forgot password?
         </button>
       </div>

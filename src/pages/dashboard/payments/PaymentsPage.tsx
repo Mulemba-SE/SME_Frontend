@@ -111,6 +111,8 @@ function PaymentRow({ payment }: { payment: PaymentListItem }) {
 
   const { user } = useAuth();
   const isCustomer = Boolean(user?.roles?.includes("CUSTOMER"));
+  const isStaff = Boolean(user?.roles?.includes("STAFF"));
+  const isManager = Boolean(user?.roles?.includes("MANAGER"));
 
   const { data, isLoading, isError, error, isFetching } = usePayments({
     paymentNo: searchBy === "paymentNo" && hasValidNumericSearch ? numericSearch : undefined,
@@ -124,12 +126,15 @@ function PaymentRow({ payment }: { payment: PaymentListItem }) {
 
   const { data: stats, isLoading: isStatsLoading, isError: isStatsError } = usePaymentStats({ enabled: !isCustomer });
   const statsUnavailable = isStatsLoading || isStatsError;
+  const showStats = isStaff || isManager;
 
   const payments = data ?? [];
   const totalPages = page + (payments.length === PAGE_SIZE ? 1 : 0);
 
-  const totalRecorded =
+  const totalRecordedAmount =
     (stats?.pendingAmount ?? 0) + (stats?.confirmedAmount ?? 0) + (stats?.failedAmount ?? 0);
+  const totalRecordedCount =
+    (stats?.pendingCount ?? 0) + (stats?.confirmedCount ?? 0) + (stats?.failedCount ?? 0);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
@@ -159,53 +164,107 @@ function PaymentRow({ payment }: { payment: PaymentListItem }) {
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
-        <StatCard
-          label="Total Recorded"
-          value={statsUnavailable ? "—" : formatKES(totalRecorded)}
-          iconBg="#EFF6FF"
-          icon={
-            <svg width="20" height="20" fill="none" stroke="#2563EB" strokeWidth="1.8" viewBox="0 0 24 24">
-              <line x1="12" y1="1" x2="12" y2="23" />
-              <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-            </svg>
-          }
-        />
-        <StatCard
-          label="Confirmed"
-          value={statsUnavailable ? "—" : formatKES(stats?.confirmedAmount ?? 0)}
-          iconBg="#ECFDF5"
-          icon={
-            <svg width="20" height="20" fill="none" stroke="#059669" strokeWidth="1.8" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="8 12 11 15 16 9" />
-            </svg>
-          }
-        />
-        <StatCard
-          label="Pending"
-          value={statsUnavailable ? "—" : formatKES(stats?.pendingAmount ?? 0)}
-          iconBg="#FEF3C7"
-          icon={
-            <svg width="20" height="20" fill="none" stroke="#D97706" strokeWidth="1.8" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-          }
-        />
-        <StatCard
-          label="Failed"
-          value={statsUnavailable ? "—" : formatKES(stats?.failedAmount ?? 0)}
-          iconBg="#FEE2E2"
-          icon={
-            <svg width="20" height="20" fill="none" stroke="#DC2626" strokeWidth="1.8" viewBox="0 0 24 24">
-              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-          }
-        />
-      </div>
+      {showStats && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
+          {isStaff ? (
+            <>
+              <StatCard
+                label="Payment records"
+                value={statsUnavailable ? "—" : String(totalRecordedCount)}
+                iconBg="#EFF6FF"
+                icon={
+                  <svg width="20" height="20" fill="none" stroke="#2563EB" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+                  </svg>
+                }
+              />
+              <StatCard
+                label="Confirmed Payments"
+                value={statsUnavailable ? "—" : String(stats?.confirmedCount ?? 0)}
+                iconBg="#ECFDF5"
+                icon={
+                  <svg width="20" height="20" fill="none" stroke="#059669" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="8 12 11 15 16 9" />
+                  </svg>
+                }
+              />
+              <StatCard
+                label="Pending Payments"
+                value={statsUnavailable ? "—" : String(stats?.pendingCount ?? 0)}
+                iconBg="#FEF3C7"
+                icon={
+                  <svg width="20" height="20" fill="none" stroke="#D97706" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                }
+              />
+              <StatCard
+                label="Failed Payments"
+                value={statsUnavailable ? "—" : String(stats?.failedCount ?? 0)}
+                iconBg="#FEE2E2"
+                icon={
+                  <svg width="20" height="20" fill="none" stroke="#DC2626" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                }
+              />
+            </>
+          ) : (
+            <>
+              <StatCard
+                label="Total Recorded"
+                value={statsUnavailable ? "—" : formatKES(totalRecordedAmount)}
+                iconBg="#EFF6FF"
+                icon={
+                  <svg width="20" height="20" fill="none" stroke="#2563EB" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+                  </svg>
+                }
+              />
+              <StatCard
+                label="Confirmed"
+                value={statsUnavailable ? "—" : formatKES(stats?.confirmedAmount ?? 0)}
+                iconBg="#ECFDF5"
+                icon={
+                  <svg width="20" height="20" fill="none" stroke="#059669" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="8 12 11 15 16 9" />
+                  </svg>
+                }
+              />
+              <StatCard
+                label="Pending"
+                value={statsUnavailable ? "—" : formatKES(stats?.pendingAmount ?? 0)}
+                iconBg="#FEF3C7"
+                icon={
+                  <svg width="20" height="20" fill="none" stroke="#D97706" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                }
+              />
+              <StatCard
+                label="Failed"
+                value={statsUnavailable ? "—" : formatKES(stats?.failedAmount ?? 0)}
+                iconBg="#FEE2E2"
+                icon={
+                  <svg width="20" height="20" fill="none" stroke="#DC2626" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                }
+              />
+            </>
+          )}
+        </div>
+      )}
 
 <div className="flex flex-col sm:flex-row gap-3 mb-4">
   <div className="relative flex-1">

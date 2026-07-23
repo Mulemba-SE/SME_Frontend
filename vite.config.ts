@@ -11,7 +11,15 @@ export default defineConfig({
       port: 5173,
     },
     proxy: {
-      '/auth/': { target: 'http://localhost:8081', changeOrigin: true },
+      '/auth/': {
+  target: 'http://localhost:8081',
+  changeOrigin: true,
+  bypass: (req) => {
+    if (req.method === 'GET') {
+      return req.url // tell Vite to serve this locally instead of proxying
+    }
+  },
+},
       '/me': { target: 'http://localhost:8081', changeOrigin: true },
       '/api': { target: 'http://localhost:8081', changeOrigin: true },
       '/customer': { target: 'http://localhost:8081', changeOrigin: true },

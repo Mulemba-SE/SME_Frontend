@@ -79,6 +79,9 @@ export interface InvoiceStats {
   draft: number;
   pending: number;
   overdue: number;
+  total_invoices: number;
+  total_sent: number;
+  outstanding_invoices: number;
   amount_overdue: number;
   amount_receivables: number;
 }

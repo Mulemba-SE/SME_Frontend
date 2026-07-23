@@ -1,6 +1,6 @@
 import { api } from "./client";
 import { API } from "./endpoints";
-import type { LoginRequest, RegisterRequest, ChangePasswordRequest, AuthResponse, MeResponse } from "../types/auth";
+import type { LoginRequest, RegisterRequest, ChangePasswordRequest, ForgotPasswordRequest, ResetPasswordRequest, AuthResponse, MeResponse } from "../types/auth";
 
 export const authApi = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
@@ -24,6 +24,14 @@ export const authApi = {
   oneTimeLogin: async (token: string): Promise<AuthResponse> => {
     const res = await api.post<AuthResponse>(API.AUTH.ONE_TIME_LOGIN, { token });
     return res.data;
+  },
+
+  forgotPassword: async (data: ForgotPasswordRequest): Promise<void> => {
+    await api.post(API.AUTH.FORGOT_PASSWORD, data);
+  },
+
+  resetPassword: async (data: ResetPasswordRequest): Promise<void> => {
+    await api.post(API.AUTH.RESET_PASSWORD, data);
   },
 
   // Important: Backend uses /me
