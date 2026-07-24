@@ -200,28 +200,24 @@ export default function StaffDashboardPage() {
         <StatCard
           label="Total invoices"
           value={invoiceStatsUnavailable ? "-" : String(invoiceStats?.total_invoices ?? 0)}
-          subtext="All invoices in the system"
           iconBg="#EFF6FF"
           icon={<WalletCards size={18} color="#2563EB" />}
         />
         <StatCard
           label="Sent invoices"
           value={invoiceStatsUnavailable ? "-" : String(invoiceStats?.total_sent ?? 0)}
-          subtext="Invoices sent to customers"
           iconBg="#FFF7ED"
           icon={<ClipboardList size={18} color="#EA580C" />}
         />
         <StatCard
           label="Outstanding invoices"
           value={invoiceStatsUnavailable ? "-" : String(invoiceStats?.outstanding_invoices ?? 0)}
-          subtext="Invoices still unpaid"
           iconBg="#FEF3C7"
           icon={<Receipt size={18} color="#DC2626" />}
         />
         <StatCard
           label="Overdue invoices"
           value={invoiceStatsUnavailable ? "-" : String(invoiceStats?.overdue ?? 0)}
-          subtext="Invoices past due date"
           iconBg="#F3E8FF"
           icon={<CreditCard size={18} color="#9333EA" />}
         />
@@ -231,8 +227,8 @@ export default function StaffDashboardPage() {
         <h2 className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide">Quick actions</h2>
       </div>
 
-      <div className="mb-8 grid grid-cols-2 gap-3">
-        <div className="col-span-2">
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="col-span-2 sm:col-span-1">
           <QuickAction
             label="Add Customer"
             description="Register a customer before billing."
