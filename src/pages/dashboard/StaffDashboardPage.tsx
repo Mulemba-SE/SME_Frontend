@@ -41,7 +41,7 @@ function QuickAction({
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-full w-full items-start gap-2.5 sm:gap-3 rounded-2xl p-3 sm:p-4 text-left shadow-sm transition-all ${accent} hover:shadow-md`}
+      className={`flex h-full w-full items-center sm:items-start gap-2.5 sm:gap-3 rounded-2xl p-3 sm:p-4 text-left shadow-sm transition-all ${accent} hover:shadow-md`}
     >
       <span className={`flex h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/70 ${iconColor}`}>
         {icon}
