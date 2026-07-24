@@ -227,7 +227,17 @@ export default function StaffDashboardPage() {
         <h2 className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide">Quick actions</h2>
       </div>
 
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="mb-8 grid grid-cols-2 gap-3">
+        <div className="col-span-2">
+          <QuickAction
+            label="Add Customer"
+            description="Register a customer before billing."
+            accent="bg-green-50"
+            iconColor="text-green-600"
+            icon={<UserPlus size={18} />}
+            onClick={() => navigate("/dashboard/customers/new")}
+          />
+        </div>
         <QuickAction
           label="Create Invoice"
           description="Prepare and send a customer invoice."
@@ -235,14 +245,6 @@ export default function StaffDashboardPage() {
           iconColor="text-blue-600"
           icon={<FilePlus2 size={18} />}
           onClick={() => navigate("/dashboard/invoices/new")}
-        />
-        <QuickAction
-          label="Add Customer"
-          description="Register a customer before billing."
-          accent="bg-green-50"
-          iconColor="text-green-600"
-          icon={<UserPlus size={18} />}
-          onClick={() => navigate("/dashboard/customers/new")}
         />
         <QuickAction
           label="Record Payment"
