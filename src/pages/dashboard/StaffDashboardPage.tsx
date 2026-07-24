@@ -41,14 +41,14 @@ function QuickAction({
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-full w-full items-start gap-3 rounded-2xl p-4 text-left shadow-sm transition-all ${accent} hover:shadow-md`}
+      className={`flex h-full w-full items-start gap-2.5 sm:gap-3 rounded-2xl p-3 sm:p-4 text-left shadow-sm transition-all ${accent} hover:shadow-md`}
     >
-      <span className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/70 ${iconColor}`}>
+      <span className={`flex h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/70 ${iconColor}`}>
         {icon}
       </span>
       <span className="min-w-0">
         <span className="block text-sm font-semibold text-gray-900">{label}</span>
-        <span className="mt-1 block text-xs leading-relaxed text-gray-500">{description}</span>
+        <span className="mt-1 hidden sm:block text-xs leading-relaxed text-gray-500">{description}</span>
       </span>
     </button>
   );
@@ -192,7 +192,7 @@ export default function StaffDashboardPage() {
         </div>
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Total invoices"
           value={invoiceStatsUnavailable ? "-" : String(invoiceStats?.total_invoices ?? 0)}
@@ -227,7 +227,7 @@ export default function StaffDashboardPage() {
         <h2 className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide">Quick actions</h2>
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <QuickAction
           label="Create Invoice"
           description="Prepare and send a customer invoice."
