@@ -29,6 +29,7 @@ function QuickAction({
   accent,
   iconColor,
   onClick,
+  centered = false,
 }: {
   label: string;
   description: string;
@@ -36,12 +37,15 @@ function QuickAction({
   accent: string;
   iconColor: string;
   onClick: () => void;
+  centered?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-full w-full items-center sm:items-start gap-2.5 sm:gap-3 rounded-2xl p-3 sm:p-4 text-left shadow-sm transition-all ${accent} hover:shadow-md`}
+      className={`flex h-full w-full items-center gap-2.5 sm:gap-3 rounded-2xl p-3 sm:p-4 shadow-sm transition-all ${
+        centered ? "justify-center text-center sm:justify-start sm:text-left" : "text-left sm:items-start"
+      } ${accent} hover:shadow-md`}
     >
       <span className={`flex h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/70 ${iconColor}`}>
         {icon}
@@ -236,6 +240,7 @@ export default function StaffDashboardPage() {
             iconColor="text-green-600"
             icon={<UserPlus size={18} />}
             onClick={() => navigate("/dashboard/customers/new")}
+            centered
           />
         </div>
         <QuickAction
