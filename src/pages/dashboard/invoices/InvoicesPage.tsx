@@ -133,15 +133,6 @@ function InvoiceRow({
 
 // Icons
 
-function BellIcon() {
-  return (
-    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-      <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 01-3.46 0" />
-    </svg>
-  );
-}
-
 export default function InvoicesPage() {
   const [searchInput, setSearchInput] = useState("");
   const [searchBy, setSearchBy] = useState<"firstName" | "lastName" | "customerNo" | "invoiceNo">("firstName");
@@ -245,13 +236,6 @@ export default function InvoicesPage() {
           </div>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
-          <button
-            type="button"
-            className="p-2.5 rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors"
-            aria-label="Notifications"
-          >
-            <BellIcon />
-          </button>
           <Link
             to="/dashboard/invoices/new"
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"

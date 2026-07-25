@@ -64,15 +64,6 @@ function validate(form: FormState): Record<string, string> {
   return errors;
 }
 
-function BellIcon() {
-  return (
-    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-      <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 01-3.46 0" />
-    </svg>
-  );
-}
-
 function InfoIcon() {
   return (
     <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -166,13 +157,6 @@ export default function NewCustomerPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white"
-          >
-            <BellIcon />
-          </button>
-
           <Link
             to="/dashboard/customers"
             className="inline-flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-blue-700 text-white px-4"
