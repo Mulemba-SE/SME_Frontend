@@ -97,6 +97,9 @@ const latestInvoiceNumber = latestInvoice?.invoiceNo != null
 
 const latestInvoiceDate = latestInvoice?.dueDate ?? null;
 const latestInvoiceStatus = latestInvoice?.status ?? "—";
+const latestInvoiceTotal = Number(latestInvoice?.invoiceTotal ?? 0);
+const latestInvoiceAmountPaid = Number(latestInvoice?.amountPaid ?? 0);
+const latestInvoiceOutstanding = Math.max(0, latestInvoiceTotal - latestInvoiceAmountPaid);
 
   if (isCustomerLoading || isInvoicesLoading) return <Skeleton />;
   if (isCustomerError || isInvoicesError) return <ErrorState userNo={userNo ?? ""} />;
@@ -255,7 +258,7 @@ const latestInvoiceStatus = latestInvoice?.status ?? "—";
                 label="Invoice Total"
                 value={
                   <span className="text-gray-900 font-semibold">
-                    {totalInvoiceValue > 0 ? formatKES(totalInvoiceValue) : "—"}
+                    {latestInvoiceTotal > 0 ? formatKES(latestInvoiceTotal) : "—"}
                   </span>
                 }
               />
@@ -263,7 +266,7 @@ const latestInvoiceStatus = latestInvoice?.status ?? "—";
                 label="Amount Paid"
                 value={
                   <span className="text-gray-900 font-semibold">
-                    {totalAmountPaid > 0 ? formatKES(totalAmountPaid) : "—"}
+                    {latestInvoiceAmountPaid > 0 ? formatKES(latestInvoiceAmountPaid) : "—"}
                   </span>
                 }
               />
@@ -271,7 +274,7 @@ const latestInvoiceStatus = latestInvoice?.status ?? "—";
                 label="Outstanding"
                 value={
                   <span className="text-gray-900 font-semibold">
-                    {totalOutstanding > 0 ? formatKES(totalOutstanding) : "—"}
+                    {latestInvoiceOutstanding > 0 ? formatKES(latestInvoiceOutstanding) : "—"}
                   </span>
                 }
               />
