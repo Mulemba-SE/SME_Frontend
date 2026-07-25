@@ -74,6 +74,8 @@ export default function CustomerDetailPage() {
         customerNo: customerId,
         page: 1,
         limit: 100,
+        sortBy: "CREATE_DATE",
+        sortDirection: "DESC",
       });
     },
     enabled: Boolean(userNo && !Number.isNaN(customerId)),
