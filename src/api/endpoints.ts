@@ -43,6 +43,7 @@ export const API = {
     REVENUE: "/reports/revenue",
     PAYMENTS_BY_METHOD: "/reports/payments-by-method",
     TOP_CUSTOMERS: "/reports/top-customers",
+    EXPORT: "/reports/export",
   },
 
 } as const;

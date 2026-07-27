@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useReportsSummary, useRevenueChart, usePaymentsByMethod, useTopCustomers } from "../../hooks/useReports";
+import { reportsApi } from "../../api/reports";
 import { StatCard } from "../../components/ui/StatCard";
 import { formatKES, formatDate, todayISO, daysAgoISO, formatShortDate } from "../../lib/format";
 import { methodLabel, methodChartColor } from "../../lib/paymentMethod";
@@ -46,6 +47,7 @@ export default function ReportsPage() {
   const [from, setFrom] = useState(daysAgoISO(7));
   const [to, setTo] = useState(todayISO());
   const [granularity, setGranularity] = useState<ReportGranularity>("DAILY");
+  const [isExporting, setIsExporting] = useState(false);
 
   const filterParams = { from, to, granularity };
   const comparisonLabel = getPriorPeriodLabel(from, to);
@@ -54,6 +56,17 @@ export default function ReportsPage() {
   const { data: revenueData, isLoading: revenueLoading } = useRevenueChart(filterParams);
   const { data: methodData, isLoading: methodLoading } = usePaymentsByMethod(filterParams);
   const { data: topCustomers, isLoading: topCustomersLoading } = useTopCustomers(filterParams, 5);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await reportsApi.exportReport(filterParams);
+    } catch (err) {
+      console.error("Failed to export report", err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const chartData = (revenueData ?? []).map((p) => ({
     date: formatShortDate(p.bucketDate),
@@ -99,13 +112,18 @@ export default function ReportsPage() {
               className="outline-none text-gray-700"
             />
           </div>
-          <button className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 bg-white rounded-xl text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors">
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={isExporting}
+            className="flex items-center gap-2 px-3.5 py-2.5 border border-gray-200 bg-white rounded-xl text-sm text-gray-600 font-medium hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+          >
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            Export
+            {isExporting ? "Exporting…" : "Export"}
           </button>
         </div>
       </div>

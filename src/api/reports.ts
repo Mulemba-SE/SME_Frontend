@@ -74,4 +74,28 @@ export const reportsApi = {
       lastPaymentDate: c.lastPaymentDate ?? null,
     }));
   },
+
+  exportReport: async (params: ReportsFilterParams): Promise<void> => {
+    const res = await api.get<Blob>(API.REPORTS.EXPORT, {
+      params: {
+        from: params.from,
+        to: params.to,
+        granularity: params.granularity ?? "DAILY",
+      },
+      responseType: "blob",
+    });
+
+    const disposition = res.headers["content-disposition"] as string | undefined;
+    const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
+    const filename = filenameMatch?.[1] ?? `ImaraBill_Report_${params.from}_to_${params.to}.pdf`;
+
+    const url = window.URL.createObjectURL(res.data);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
 };
