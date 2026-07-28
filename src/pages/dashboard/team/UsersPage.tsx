@@ -61,7 +61,7 @@ export default function UsersPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
-      <div className="flex items-start justify-between gap-4 mb-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Team</h1>
           <p className="text-sm text-gray-500 mt-1">Manage Manager and Staff accounts.</p>
@@ -69,7 +69,7 @@ export default function UsersPage() {
 
         <Link
           to="/dashboard/team/new"
-          className="inline-flex h-10 items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 text-sm font-medium transition-colors"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 text-sm font-medium transition-colors"
         >
           + Add Team Member
         </Link>
