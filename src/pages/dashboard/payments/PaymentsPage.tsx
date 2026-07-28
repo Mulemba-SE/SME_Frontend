@@ -364,15 +364,17 @@ function PaymentRow({ payment }: { payment: PaymentListItem }) {
           </div>
         )}
 
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          itemCount={payments.length}
-          pageSize={PAGE_SIZE}
-          isFetching={isFetching}
-          onPageChange={setPage}
-          itemLabel="payments"
-        />
+        {payments.length > 0 && (
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            itemCount={payments.length}
+            pageSize={PAGE_SIZE}
+            isFetching={isFetching}
+            onPageChange={setPage}
+            itemLabel="payments"
+          />
+        )}
       </div>
     </div>
   );
