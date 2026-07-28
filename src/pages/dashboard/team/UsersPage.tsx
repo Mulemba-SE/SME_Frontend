@@ -62,9 +62,18 @@ export default function UsersPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Team</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage Manager and Staff accounts.</p>
+        <div className="flex items-start gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm">
+            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+              <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <polyline points="16 11 18 13 22 9" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Team</h1>
+            <p className="text-sm text-gray-500 mt-1">Manage Manager and Staff accounts.</p>
+          </div>
         </div>
 
         <Link
