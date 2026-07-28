@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AuthPage from './pages/auth/AuthPage'
+import SetupPage from './pages/auth/SetupPage'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
 import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 import ChangePasswordPage from './pages/auth/ChangePasswordPage'
@@ -24,6 +25,8 @@ import DashboardLayout from './components/layout/DashboardLayout'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import { useEffect, useState } from 'react'
 import { useAuth } from './hooks/useAuth'
+import { useSetupStatus } from './hooks/useSetupStatus'
+
 
 const qc = new QueryClient()
 const operationalRoles = ["MANAGER", "STAFF"]
@@ -32,12 +35,13 @@ const customerInvoicePaymentRoles = ["MANAGER", "STAFF", "CUSTOMER"]
 
 function AppRoutes() {
   const { restoreSession, user } = useAuth()
+  const { needsSetup, checkSetupStatus } = useSetupStatus()
   const [sessionChecked, setSessionChecked] = useState(false)
 
-  useEffect(() => {
-    restoreSession().finally(() => setSessionChecked(true))
-
+useEffect(() => {
+    Promise.all([restoreSession(), checkSetupStatus()]).finally(() => setSessionChecked(true))
   }, [])
+
 
   if (!sessionChecked) {
     return (
@@ -49,10 +53,18 @@ function AppRoutes() {
 
   return (
     <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Navigate to={needsSetup ? "/setup" : "/dashboard"} replace />} />
+
 
       {/* Public */}
-      <Route path="/auth" element={<AuthPage />} />
+      <Route
+        path="/setup"
+        element={needsSetup ? <SetupPage /> : <Navigate to="/auth" replace />}
+      />
+      <Route
+        path="/auth"
+        element={needsSetup ? <Navigate to="/setup" replace /> : <AuthPage />}
+      />
       <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
 
@@ -187,7 +199,8 @@ function AppRoutes() {
         />
       </Route>
 
-      <Route path="*" element={<Navigate to="/auth" replace />} />
+      <Route path="*" element={<Navigate to={needsSetup ? "/setup" : "/auth"} replace />} />
+
     </Routes>
   )
 }

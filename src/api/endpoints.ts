@@ -10,6 +10,11 @@ export const API = {
     ME: "/me",
   },
 
+  SETUP: {
+    EXISTS: "/setup/exists",
+    FIRST_MANAGER: "/setup/first-manager",
+  },
+
   CUSTOMERS: {
     LIST: "/customer",
     STATS: "/customer/dashboard",
