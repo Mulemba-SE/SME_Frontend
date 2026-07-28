@@ -151,26 +151,19 @@ export default function CustomersPage() {
   const total = data?.total;
 
   const { data: statsData, isLoading: statsLoading, isError: statsError } = useCustomerStats();
-  const totalCustomersDisplay = statsLoading
-    ? "Loading..."
-    : statsError
+  const statsUnavailable = statsLoading || statsError;
+  const totalCustomersDisplay = statsUnavailable
     ? "—"
     : statsData?.totalCustomers?.toLocaleString() ?? "—";
-  const newCustomersDisplay = statsLoading
-    ? "Loading..."
-    : statsError
+  const newCustomersDisplay = statsUnavailable
     ? "—"
     : statsData?.newCustomers?.toLocaleString() ?? "—";
-  const totalReceivablesDisplay = statsLoading
-    ? "Loading..."
-    : statsError
+  const totalReceivablesDisplay = statsUnavailable
     ? "—"
     : statsData?.totalReceivables != null
     ? formatKES(Number(statsData.totalReceivables))
     : "—";
-  const totalOverdueDisplay = statsLoading
-    ? "Loading..."
-    : statsError
+  const totalOverdueDisplay = statsUnavailable
     ? "—"
     : statsData?.totalOverdue != null
     ? formatKES(Number(statsData.totalOverdue))
