@@ -7,6 +7,7 @@ export const API = {
     ONE_TIME_LOGIN: "/auth/one-time-login",
     FORGOT_PASSWORD: "/auth/forgot-password",
     RESET_PASSWORD: "/auth/reset-password",
+    RESET_PASSWORD_INFO: "/auth/reset-password/info",
     ME: "/me",
   },
 

@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ChangeEvent, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { authApi } from "../../api/auth";
+import { useAuthStore } from "../../store/authStore";
 import { InputField } from "../../components/ui/InputField";
 
 function validateNewPassword(v: string) {
@@ -16,15 +17,37 @@ export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") ?? "";
+  const setAuth = useAuthStore((s) => s.setAuth);
   const [form, setForm] = useState({ newPassword: "", confirmPassword: "" });
   const [errors, setErrors] = useState({ newPassword: "", confirmPassword: "" });
   const [formError, setFormError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingToken, setIsCheckingToken] = useState(true);
+  const [isNewAccount, setIsNewAccount] = useState(false);
+  const [tokenValid, setTokenValid] = useState(false);
 
   useEffect(() => {
     if (!token) {
-      setFormError("Reset token is missing. Please use the link from your email.");
+      setFormError("Reset link is missing. Please use the link from your email.");
+      setIsCheckingToken(false);
+      return;
     }
+
+    (async () => {
+      try {
+        const info = await authApi.getResetTokenInfo(token);
+        setTokenValid(info.valid);
+        setIsNewAccount(info.isNewAccount);
+        if (!info.valid) {
+          setFormError("This link is invalid or has expired. Please request a new one.");
+        }
+      } catch {
+        setTokenValid(false);
+        setFormError("This link is invalid or has expired. Please request a new one.");
+      } finally {
+        setIsCheckingToken(false);
+      }
+    })();
   }, [token]);
 
   const updateField = (field: keyof typeof form) => (e: ChangeEvent<HTMLInputElement>) => {
@@ -35,7 +58,7 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!token) return;
+    if (!token || !tokenValid) return;
 
     const newPasswordError = validateNewPassword(form.newPassword);
     const confirmPasswordError = form.confirmPassword !== form.newPassword ? "Passwords do not match." : "";
@@ -44,8 +67,10 @@ export default function ResetPasswordPage() {
 
     setIsLoading(true);
     try {
-      await authApi.resetPassword({ token, newPassword: form.newPassword });
-      navigate("/auth", { replace: true });
+      const res = await authApi.resetPassword({ token, newPassword: form.newPassword });
+      setAuth({ email: "", firstName: res.firstName, roles: res.roles, mustChangePassword: res.mustChangePassword });
+      localStorage.setItem("imarabill_has_session", "1");
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       setFormError("Unable to reset your password. Please try again or request a new link.");
     } finally {
@@ -57,9 +82,13 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#F8F8FF] px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
         <div className="mb-6">
-          <h1 className="text-xl font-semibold text-gray-900">Reset your password</h1>
+          <h1 className="text-xl font-semibold text-gray-900">
+            {isNewAccount ? "Welcome to ImaraBill" : "Reset your password"}
+          </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Enter a new password for your account.
+            {isNewAccount
+              ? "Choose a password to finish setting up your account."
+              : "Enter a new password for your account."}
           </p>
         </div>
 
@@ -88,10 +117,16 @@ export default function ResetPasswordPage() {
           />
           <button
             type="submit"
-            disabled={isLoading || !token}
+            disabled={isLoading || isCheckingToken || !tokenValid}
             className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold rounded-lg transition-colors"
           >
-            {isLoading ? "Resetting…" : "Reset password"}
+            {isLoading
+              ? isNewAccount ? "Setting up…" : "Resetting…"
+              : isCheckingToken
+              ? "Checking link…"
+              : isNewAccount
+              ? "Set password"
+              : "Reset password"}
           </button>
         </form>
 

@@ -1,7 +1,6 @@
 import { api } from "./client";
 import { API } from "./endpoints";
-import type { LoginRequest, RegisterRequest, ChangePasswordRequest, ForgotPasswordRequest, ResetPasswordRequest, AuthResponse, MeResponse } from "../types/auth";
-
+import type { LoginRequest, RegisterRequest, ChangePasswordRequest, ForgotPasswordRequest, ResetPasswordRequest, ResetTokenInfo, AuthResponse, MeResponse } from "../types/auth";
 export const authApi = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
     const res = await api.post<AuthResponse>(API.AUTH.LOGIN, data);
@@ -30,8 +29,14 @@ export const authApi = {
     await api.post(API.AUTH.FORGOT_PASSWORD, data);
   },
 
-  resetPassword: async (data: ResetPasswordRequest): Promise<void> => {
-    await api.post(API.AUTH.RESET_PASSWORD, data);
+  resetPassword: async (data: ResetPasswordRequest): Promise<AuthResponse> => {
+    const res = await api.post<AuthResponse>(API.AUTH.RESET_PASSWORD, data);
+    return res.data;
+  },
+
+  getResetTokenInfo: async (token: string): Promise<ResetTokenInfo> => {
+    const res = await api.get<ResetTokenInfo>(API.AUTH.RESET_PASSWORD_INFO, { params: { token } });
+    return res.data;
   },
 
   // Important: Backend uses /me

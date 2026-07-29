@@ -44,3 +44,8 @@ export interface ChangePasswordRequest {
   currentPassword?: string;
   newPassword: string;
 }
+
+export interface ResetTokenInfo {
+  valid: boolean;
+  isNewAccount: boolean;
+}
