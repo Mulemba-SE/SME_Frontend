@@ -37,12 +37,15 @@ const TIPS = [
   "Customer name should match their official records",
 ];
 
-const PHONE_REGEX = /^7[0-9]{8}$/;
+const KENYA_PHONE_REGEX = /^7[0-9]{8}$/;
+const GENERIC_PHONE_REGEX = /^[0-9]{4,14}$/;
 
-function normalizeKenyanLocalPhone(input: string): string {
+function normalizeLocalPhone(input: string, countryCode: string): string {
   const digitsOnly = input.replace(/\D/g, "");
-  if (digitsOnly.startsWith("254")) return digitsOnly.slice(3);
-  if (digitsOnly.startsWith("0")) return digitsOnly.slice(1);
+  if (countryCode === "+254") {
+    if (digitsOnly.startsWith("254")) return digitsOnly.slice(3);
+    if (digitsOnly.startsWith("0")) return digitsOnly.slice(1);
+  }
   return digitsOnly;
 }
 
@@ -57,8 +60,16 @@ function validate(form: FormState): Record<string, string> {
     errors.email = "Enter a valid email address.";
   }
 
-  if (form.phone.trim() && !PHONE_REGEX.test(form.phone.trim())) {
-    errors.phone = "Enter a valid phone number";
+  if (form.phone.trim()) {
+    const isKenya = form.phoneCountryCode === "+254";
+    const isValid = isKenya
+      ? KENYA_PHONE_REGEX.test(form.phone.trim())
+      : GENERIC_PHONE_REGEX.test(form.phone.trim());
+    if (!isValid) {
+      errors.phone = isKenya
+        ? "Enter a valid Kenyan phone number (e.g. 712345678)."
+        : "Enter a valid phone number.";
+    }
   }
 
   return errors;
@@ -107,7 +118,7 @@ export default function NewCustomerPage() {
       set(field, e.target.value);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    set("phone", normalizeKenyanLocalPhone(e.target.value));
+    set("phone", normalizeLocalPhone(e.target.value, form.phoneCountryCode));
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -224,8 +235,8 @@ export default function NewCustomerPage() {
                     <input
                       type="tel"
                       inputMode="numeric"
-                      pattern="[0-9]{9}"
-                      placeholder="712345678"
+                      pattern={form.phoneCountryCode === "+254" ? "[0-9]{9}" : "[0-9]{4,14}"}
+                      placeholder={form.phoneCountryCode === "+254" ? "712345678" : "Local number"}
                       value={form.phone}
                       onChange={handlePhoneChange}
                       className={`flex-1 min-w-0 px-3 py-2.5 text-sm border rounded-r-lg outline-none transition-all
@@ -234,7 +245,9 @@ export default function NewCustomerPage() {
                         ${fieldErrors.phone ? "border-red-400 focus:border-red-500 focus:ring-red-100" : ""}`}
                     />
                   </div>
-                  <p className="text-xs text-gray-500">Format: {form.phoneCountryCode} 712345678</p>
+                  <p className="text-xs text-gray-500">
+                    Format: {form.phoneCountryCode} {form.phoneCountryCode === "+254" ? "712345678" : "<local number>"}
+                  </p>
                   {fieldErrors.phone && <p className="text-xs text-red-500">{fieldErrors.phone}</p>}
                 </div>
               </div>
