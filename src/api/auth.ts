@@ -21,6 +21,11 @@ export const authApi = {
     await api.post(API.AUTH.CHANGE_PASSWORD, data);
   },
 
+  oneTimeLogin: async (token: string): Promise<AuthResponse> => {
+    const res = await api.post<AuthResponse>(API.AUTH.ONE_TIME_LOGIN, { token });
+    return res.data;
+  },
+
   forgotPassword: async (data: ForgotPasswordRequest): Promise<void> => {
     await api.post(API.AUTH.FORGOT_PASSWORD, data);
   },

@@ -194,8 +194,10 @@ list: async (params: PaymentsFilterParams): Promise<PaymentListItem[]> => {
   return (res.data ?? []).map(normalizePayment);
 },
 
-  stats: async (): Promise<PaymentStats> => {
-    const res = await api.get<PaymentStats>(API.PAYMENTS.STATS);
+  stats: async (params?: { mine?: boolean }): Promise<PaymentStats> => {
+    const res = await api.get<PaymentStats>(API.PAYMENTS.STATS, {
+      params: { mine: params?.mine || undefined },
+    });
 
     return res.data;
   },

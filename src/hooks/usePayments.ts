@@ -12,10 +12,10 @@ export function usePayments(params: PaymentsFilterParams) {
   });
 }
 
-export function usePaymentStats(options?: { enabled?: boolean }) {
+export function usePaymentStats(options?: { enabled?: boolean; mine?: boolean }) {
   return useQuery({
-    queryKey: [PAYMENTS_KEY, "stats"],
-    queryFn: () => paymentsApi.stats(),
+    queryKey: [PAYMENTS_KEY, "stats", options?.mine ?? false],
+    queryFn: () => paymentsApi.stats({ mine: options?.mine }),
     enabled: options?.enabled ?? true,
   });
 }

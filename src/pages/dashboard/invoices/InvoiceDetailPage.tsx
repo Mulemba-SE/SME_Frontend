@@ -213,6 +213,7 @@ const paidDate = useMemo(() => {
   }
 
   const invoiceLabel = `INV-${String(invoice.invoiceNo).padStart(7, "0")}`;
+  console.log("invoice.status:", invoice.status);
   const recordPaymentHref =
     invoice.invoiceNo != null && invoice.customerNo != null
       ? `/dashboard/payments/new?invoiceNo=${invoice.invoiceNo}&customerNo=${invoice.customerNo}&amount=${outstanding || ""}`

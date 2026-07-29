@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { authApi } from "../../api/auth";
+import { useAuthStore } from "../../store/authStore";
 import { InputField } from "../../components/ui/InputField";
 
 type Tab = "login" | "register";
@@ -358,6 +360,30 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
 
 export default function AuthPage() {
   const [tab, setTab] = useState<Tab>("login");
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    if (!token) return;
+
+    (async () => {
+      try {
+        const res = await authApi.oneTimeLogin(token);
+        setAuth({ email: "", firstName: res.firstName, roles: res.roles, mustChangePassword: res.mustChangePassword });
+        localStorage.setItem("imarabill_has_session", "1");
+        if (res.mustChangePassword) {
+          navigate("/change-password", { replace: true });
+        } else {
+          navigate("/dashboard", { replace: true });
+        }
+      } catch (err) {
+        // token invalid or expired — let user sign in normally
+        console.error(err);
+      }
+    })();
+  }, [navigate, setAuth]);
 
   return (
     <div className="min-h-screen w-full flex flex-col lg:flex-row bg-gray-50">

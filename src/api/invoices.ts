@@ -115,8 +115,10 @@ export const invoicesApi = {
   },
 
   
-  stats: async (): Promise<InvoiceStats> => {
-    const res = await api.get<InvoiceStats>(API.INVOICES.STATS);
+  stats: async (params?: { mine?: boolean }): Promise<InvoiceStats> => {
+    const res = await api.get<InvoiceStats>(API.INVOICES.STATS, {
+      params: { mine: params?.mine || undefined },
+    });
     return res.data;
   },
 
